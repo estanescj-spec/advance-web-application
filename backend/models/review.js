@@ -21,12 +21,20 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'id'
             }
         },
+        order_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true, // set this to enforce "verified purchase" reviews in your controller
+            references: {
+                model: 'orders',
+                key: 'id'
+            }
+        },
         rating: {
             type: DataTypes.INTEGER,
             allowNull: false,
             validate: {
-                min: 1,
-                max: 5
+                min: { args: [1], msg: 'Rating must be at least 1' },
+                max: { args: [5], msg: 'Rating cannot be more than 5' }
             }
         },
         comment: {
@@ -35,12 +43,21 @@ module.exports = (sequelize, DataTypes) => {
         },
         photo_path: {
             type: DataTypes.STRING(255),
-            allowNull: true
+            allowNull: true,
+            validate: {
+                is: {
+                    args: /\.(jpg|jpeg|png|webp)$/i,
+                    msg: 'Photo path must end in .jpg, .jpeg, .png, or .webp'
+                }
+            }
         }
     }, {
         tableName: 'reviews',
         timestamps: true,
-        underscored: true
+        underscored: true,
+        indexes: [
+            { unique: true, fields: ['product_id', 'customer_id'] } // one review per customer per product
+        ]
     });
 
     return Review;

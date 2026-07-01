@@ -24,15 +24,21 @@ module.exports = (sequelize, DataTypes) => {
         quantity: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 1
+            defaultValue: 1,
+            validate: {
+                min: { args: [1], msg: 'Quantity must be at least 1' }
+            }
         },
         price_at_purchase: {
             type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                min: { args: [0], msg: 'Price at purchase cannot be negative' }
+            }
         }
     }, {
         tableName: 'order_lines',
-        timestamps: false,
+        timestamps: true,
         underscored: true
     });
 

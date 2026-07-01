@@ -1,3 +1,5 @@
+const bcrypt = require('bcrypt');
+
 module.exports = (sequelize, DataTypes) => {
     const User = sequelize.define('User', {
         id: {
@@ -12,7 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         email: {
             type: DataTypes.STRING(255),
             allowNull: false,
-            unique: true
+            unique: true,
+            validate: {
+                isEmail: { msg: 'Must be a valid email address' }
+            }
         },
         password: {
             type: DataTypes.STRING(255),
@@ -23,15 +28,42 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 'user'
         },
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
+        // Admin-controlled activate/deactivate (separate from soft delete)
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true
         }
     }, {
         tableName: 'users',
         timestamps: true,
-        underscored: true
+        underscored: true,
+        paranoid: true,        // enables soft delete: destroy() sets deleted_at, restore() clears it
+        deletedAt: 'deleted_at',
+        defaultScope: {
+            attributes: { exclude: ['password'] } // never leak password hash by default
+        },
+        scopes: {
+            withPassword: { attributes: {} } // use User.scope('withPassword') for login checks
+        },
+        hooks: {
+            beforeCreate: async (user) => {
+                if (user.password) {
+                    user.password = await bcrypt.hash(user.password, 10);
+                }
+            },
+            beforeUpdate: async (user) => {
+                if (user.changed('password')) {
+                    user.password = await bcrypt.hash(user.password, 10);
+                }
+            }
+        }
     });
+
+    // Instance helper for login
+    User.prototype.checkPassword = function (plainPassword) {
+        return bcrypt.compare(plainPassword, this.password);
+    };
 
     return User;
 };

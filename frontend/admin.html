@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - MacSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .apple-emboss {
+            position: absolute;
+            right: 8%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 500px;
+            height: 500px;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg') no-repeat center;
+            background-size: contain;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
+
+    <div class="w-full min-h-screen flex flex-col justify-between relative">
+
+        <header class="bg-white/90 backdrop-blur-md py-6 px-24 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+            <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
+
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" id="brand-logo">
+                    <svg class="w-7 h-7 text-black stroke-current fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        <path d="M3.6 9h16.8" />
+                        <path d="M3.6 15h16.8" />
+                    </svg>
+                    <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">
+                        MACSPHERE <span class="text-[#2a52be] font-bold">ADMIN</span>
+                    </div>
+                </div>
+
+                <nav class="flex items-center space-x-8 flex-1 justify-center">
+                    <a href="admin.html" class="admin-nav-link text-xs font-semibold uppercase tracking-wide text-gray-900 hover:text-[#2a52be] transition">Dashboard</a>
+                    <a href="admin-users.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Users</a>
+                    <a href="admin-products.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Products</a>
+                    <a href="admin-categories.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Categories</a>
+                    <a href="admin-orders.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Orders</a>
+                </nav>
+
+                <div class="flex items-center space-x-6 text-gray-700 shrink-0">
+                    <span id="admin-name" class="text-xs font-medium text-gray-500"></span>
+                    <button id="auth-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md transition-all transform active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <main class="relative flex-1 bg-gradient-to-br from-white via-[#f8fafc] to-[#f1f5f9] z-10 py-20">
+            <div class="max-w-[1440px] w-full mx-auto px-24 z-10">
+
+                <span class="text-[#2a52be] font-bold tracking-widest text-xs uppercase block mb-3">Overview</span>
+                <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight mb-10">Admin Dashboard</h1>
+
+                <!-- Quick Stats -->
+                <div id="stats-grid" class="grid grid-cols-4 gap-6 mb-14">
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <div class="text-[#2a52be] text-2xl mb-3"><i class="fa-solid fa-peso-sign"></i></div>
+                        <div class="text-2xl font-extrabold text-gray-900" id="stat-revenue">—</div>
+                        <div class="text-xs text-gray-400 font-medium mt-1">Total Revenue</div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <div class="text-[#2a52be] text-2xl mb-3"><i class="fa-solid fa-receipt"></i></div>
+                        <div class="text-2xl font-extrabold text-gray-900" id="stat-orders">—</div>
+                        <div class="text-xs text-gray-400 font-medium mt-1">Completed Orders</div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <div class="text-[#2a52be] text-2xl mb-3"><i class="fa-solid fa-box"></i></div>
+                        <div class="text-2xl font-extrabold text-gray-900" id="stat-items">—</div>
+                        <div class="text-xs text-gray-400 font-medium mt-1">Items Sold</div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <div class="text-[#2a52be] text-2xl mb-3"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="text-2xl font-extrabold text-gray-900" id="stat-pending">—</div>
+                        <div class="text-xs text-gray-400 font-medium mt-1">Pending Orders</div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-5">Quick Actions</h2>
+                <div class="grid grid-cols-4 gap-6">
+                    <a href="admin-users.html" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-8 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <div class="text-[#2a52be] text-2xl mb-4"><i class="fa-solid fa-users"></i></div>
+                        <h3 class="font-bold text-gray-900 text-sm mb-1">Manage Users</h3>
+                        <p class="text-gray-400 text-xs">Activate, deactivate, delete, restore accounts</p>
+                    </a>
+                    <a href="admin-products.html" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-8 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <div class="text-[#2a52be] text-2xl mb-4"><i class="fa-solid fa-laptop"></i></div>
+                        <h3 class="font-bold text-gray-900 text-sm mb-1">Manage Products</h3>
+                        <p class="text-gray-400 text-xs">Add, edit, activate, and remove listings</p>
+                    </a>
+                    <a href="admin-categories.html" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-8 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <div class="text-[#2a52be] text-2xl mb-4"><i class="fa-solid fa-layer-group"></i></div>
+                        <h3 class="font-bold text-gray-900 text-sm mb-1">Manage Categories</h3>
+                        <p class="text-gray-400 text-xs">Organize your product catalog</p>
+                    </a>
+                    <a href="admin-orders.html" class="group bg-white rounded-2xl border border-gray-100 shadow-sm p-8 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <div class="text-[#2a52be] text-2xl mb-4"><i class="fa-solid fa-truck-fast"></i></div>
+                        <h3 class="font-bold text-gray-900 text-sm mb-1">Manage Orders</h3>
+                        <p class="text-gray-400 text-xs">Review and update order statuses</p>
+                    </a>
+                </div>
+
+            </div>
+            <div class="apple-emboss max-w-[1440px]"></div>
+        </main>
+
+        <footer class="bg-white py-6 px-24 w-full z-20 border-t border-gray-100">
+            <div class="max-w-[1440px] mx-auto text-center text-gray-400 text-xs">
+                MacSphere Admin Panel &mdash; Internal use only
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/config.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            const token = localStorage.getItem('token');
+
+            // must be logged in at all
+            if (!token) {
+                window.location.href = 'login.html';
+            }
+
+            /* ============================================================
+               VERIFY ADMIN ROLE (never trust localStorage alone — confirm with backend)
+               ============================================================ */
+            $.ajax({
+                url: `${API_BASE}/users/me`,
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            }).done(function (res) {
+                if (res.user.role !== 'admin') {
+                    window.location.href = 'home.html';
+                    return;
+                }
+                $('#admin-name').text(res.user.name);
+                loadStats();
+            }).fail(function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+
+            /* ============================================================
+               LOG OUT
+               ============================================================ */
+            $('#auth-btn').on('click', function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+
+            $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
+
+            /* ============================================================
+               QUICK STATS (from reportController)
+               ============================================================ */
+            function loadStats() {
+                $.ajax({
+                    url: `${API_BASE}/reports/summary`,
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${token}` }
+                }).done(function (res) {
+                    const s = res.summary;
+                    $('#stat-revenue').text('₱' + Number(s.total_revenue).toLocaleString());
+                    $('#stat-orders').text(s.total_orders_completed);
+                    $('#stat-items').text(s.total_items_sold);
+
+                    const pending = (s.orders_by_status || []).find(o => o.status === 'pending');
+                    $('#stat-pending').text(pending ? pending.count : 0);
+                }).fail(function () {
+                    $('#stat-revenue, #stat-orders, #stat-items, #stat-pending').text('—');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

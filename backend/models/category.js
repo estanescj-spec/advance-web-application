@@ -8,11 +8,21 @@ module.exports = (sequelize, DataTypes) => {
         name: {
             type: DataTypes.STRING(100),
             allowNull: false,
-            unique: true
+            unique: true,
+            validate: {
+                notEmpty: { msg: 'Category name cannot be empty' },
+                len: { args: [2, 100], msg: 'Category name must be between 2 and 100 characters' }
+            }
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true
         }
     }, {
         tableName: 'categories',
-        timestamps: false
+        timestamps: true,
+        underscored: true
     });
 
     return Category;

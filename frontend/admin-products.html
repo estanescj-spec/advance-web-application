@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products - MacSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
+    </style>
+</head>
+<body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
+
+    <div class="w-full min-h-screen flex flex-col justify-between relative">
+
+        <header class="bg-white/90 backdrop-blur-md py-6 px-24 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+            <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
+
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" id="brand-logo">
+                    <svg class="w-7 h-7 text-black stroke-current fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        <path d="M3.6 9h16.8" />
+                        <path d="M3.6 15h16.8" />
+                    </svg>
+                    <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">
+                        MACSPHERE <span class="text-[#2a52be] font-bold">ADMIN</span>
+                    </div>
+                </div>
+
+                <nav class="flex items-center space-x-8 flex-1 justify-center">
+                    <a href="admin.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Dashboard</a>
+                    <a href="admin-users.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Users</a>
+                    <a href="admin-products.html" class="admin-nav-link text-xs font-semibold uppercase tracking-wide text-gray-900 hover:text-[#2a52be] transition">Manage Products</a>
+                    <a href="admin-categories.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Categories</a>
+                    <a href="admin-orders.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Orders</a>
+                </nav>
+
+                <div class="flex items-center space-x-6 text-gray-700 shrink-0">
+                    <span id="admin-name" class="text-xs font-medium text-gray-500"></span>
+                    <button id="auth-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md transition-all transform active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6 lg:px-8 py-10 flex-1 w-full">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-8">
+            <div>
+                <p class="text-xs uppercase tracking-[0.2em] font-bold text-[#2a52be] mb-2">Catalog</p>
+                <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight">Manage Products</h1>
+                <p class="text-slate-500 mt-2">Create, update, delete, restore, and assign multiple categories to each product.</p>
+            </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="refresh-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
+        </div>
+
+        <div id="message-box" class="hidden fixed top-28 right-6 z-50 max-w-md rounded-xl border px-4 py-3 text-sm shadow-lg"></div>
+
+        <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-bold text-lg">Products</h2>
+                        <p class="text-sm text-slate-500">Live product inventory and catalog status.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-500">Filter</label>
+                        <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <th class="px-5 py-3">Product</th>
+                                <th class="px-5 py-3">Categories</th>
+                                <th class="px-5 py-3">Price</th>
+                                <th class="px-5 py-3">Stock</th>
+                                <th class="px-5 py-3">Status</th>
+                                <th class="px-5 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+                <div id="products-empty" class="hidden p-8 text-center text-slate-500">
+                    No products found.
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 h-fit sticky top-24">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h2 id="form-title" class="font-bold text-lg">Create Product</h2>
+                        <p class="text-sm text-slate-500">Use the form to add or edit a product.</p>
+                    </div>
+                    <button id="cancel-edit-btn" class="hidden text-sm text-slate-500 hover:text-slate-900">Cancel</button>
+                </div>
+
+                <form id="product-form" class="space-y-4">
+                    <input type="hidden" id="product-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Name</label>
+                        <input id="name" type="text" required minlength="2" maxlength="255" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="MacBook Air M3">
+                        <p id="name-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                        <textarea id="description" rows="3" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Product description"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Categories</label>
+                        <div id="category-checkboxes" class="space-y-2 rounded-xl border border-slate-200 px-4 py-3 bg-white"></div>
+                        <p class="text-xs text-slate-400 mt-1">Tap or click all categories that apply.</p>
+                        <p id="categories-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Cost Price</label>
+                            <input id="cost_price" type="number" step="0.01" min="0" required class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
+                            <p id="cost_price-error" class="hidden mt-1 text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Sell Price</label>
+                            <input id="sell_price" type="number" step="0.01" min="0" required class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
+                            <p id="sell_price-error" class="hidden mt-1 text-xs text-red-600"></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Quantity</label>
+                            <input id="stock_quantity" type="number" min="0" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" value="0">
+                            <p id="stock_quantity-error" class="hidden mt-1 text-xs text-red-600"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Image</label>
+                            <input id="image" type="file" accept="image/*" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Color</label>
+                            <input id="color" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Space Gray">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Storage</label>
+                            <input id="storage" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="256GB SSD">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="is_active" type="checkbox" checked class="rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]">
+                        <label for="is_active" class="text-sm text-slate-600">Active</label>
+                    </div>
+                        <button id="save-btn" type="submit" class="w-full rounded-xl bg-[#2a52be] hover:bg-[#1f3d90] text-white font-semibold py-3.5 shadow-lg shadow-blue-600/20 transition">
+                        Create Product
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <div id="delete-modal" class="hidden fixed inset-0 modal-backdrop z-50 items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="text-lg font-bold mb-2">Delete product?</h3>
+            <p class="text-sm text-slate-500 mb-6">This will soft delete the product. You can restore it later.</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-delete-btn" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium">Cancel</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/config.js"></script>
+    <script>
+        $(document).ready(function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const state = {
+                products: [],
+                categories: [],
+                deleteId: null,
+                editMode: false
+            };
+
+            function showMessage(message, type = 'success') {
+                const box = $('#message-box');
+                const classes = type === 'success'
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-red-50 border-red-200 text-red-700';
+                box.removeClass('hidden bg-green-50 bg-red-50 border-green-200 border-red-200 text-green-700 text-red-700')
+                   .addClass(classes)
+                   .text(message);
+                window.setTimeout(() => box.addClass('hidden').text(''), 3500);
+            }
+
+            function clearFieldError(fieldId) {
+                const el = $(`#${fieldId}-error`);
+                if (el.length) {
+                    el.addClass('hidden').text('');
+                }
+            }
+
+            function setFieldError(fieldId, message) {
+                const el = $(`#${fieldId}-error`);
+                if (el.length) {
+                    el.removeClass('hidden').text(message);
+                }
+            }
+
+            function clearAllFieldErrors() {
+                ['name', 'categories', 'cost_price', 'sell_price', 'stock_quantity'].forEach(clearFieldError);
+            }
+
+            function showInlineValidationError(message) {
+                clearAllFieldErrors();
+
+                const text = String(message || '').toLowerCase();
+                if (text.includes('name')) return setFieldError('name', message);
+                if (text.includes('category')) return setFieldError('categories', message);
+                if (text.includes('cost_price')) return setFieldError('cost_price', message);
+                if (text.includes('sell_price')) return setFieldError('sell_price', message);
+                if (text.includes('stock_quantity')) return setFieldError('stock_quantity', message);
+
+                showMessage(message, 'error');
+            }
+
+            function showServerValidationError(xhr) {
+                const errorText = xhr.responseJSON?.error || xhr.responseJSON?.message || 'Unable to save product.';
+                const detailsText = xhr.responseJSON?.details || '';
+                const message = detailsText ? `${errorText}. ${detailsText}` : errorText;
+                showInlineValidationError(message);
+            }
+
+            function authHeaders() {
+                return { Authorization: `Bearer ${token}` };
+            }
+
+            function productImage(product) {
+                if (product.img_path) {
+                    return `http://localhost:4000/${product.img_path}`;
+                }
+                return 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
+            }
+
+            function getProductCategories(product) {
+                if (Array.isArray(product.Categories) && product.Categories.length) {
+                    return product.Categories;
+                }
+                if (product.Category) {
+                    return [product.Category];
+                }
+                return [];
+            }
+
+            function renderProducts() {
+                const filter = $('#status-filter').val();
+                let rows = state.products.slice();
+
+                if (filter === 'active') {
+                    rows = rows.filter(p => p.is_active && !p.deleted_at);
+                } else if (filter === 'inactive') {
+                    rows = rows.filter(p => !p.is_active && !p.deleted_at);
+                } else if (filter === 'deleted') {
+                    rows = rows.filter(p => p.deleted_at);
+                }
+
+                const tbody = $('#products-tbody');
+                tbody.empty();
+
+                if (!rows.length) {
+                    $('#products-empty').removeClass('hidden');
+                    return;
+                }
+
+                $('#products-empty').addClass('hidden');
+
+                rows.forEach(product => {
+                    const categories = getProductCategories(product).map(c => c.name).join(', ') || '—';
+                    const statusBadge = product.deleted_at
+                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
+                        : (product.is_active
+                            ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
+                            : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+
+                    const actions = `
+                        <div class="flex items-center justify-end gap-2 flex-wrap">
+                            ${product.deleted_at ? `
+                                <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${product.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
+                            ` : `
+                                <button class="edit-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}"><i class="fa-solid fa-pen"></i>Edit</button>
+                                <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}" data-active="${product.is_active ? '1' : '0'}">
+                                    <i class="fa-solid ${product.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
+                                    ${product.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${product.id}"><i class="fa-solid fa-trash"></i>Delete</button>
+                            `}
+                        </div>
+                    `;
+
+                    tbody.append(`
+                        <tr class="align-top">
+                            <td class="px-5 py-4">
+                                <div class="flex items-start gap-3">
+                                    <img src="${productImage(product)}" alt="${product.name}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 bg-slate-100">
+                                    <div>
+                                        <div class="font-semibold text-slate-900">${product.name}</div>
+                                        <div class="text-xs text-slate-500 mt-1">ID #${product.id}</div>
+                                        <div class="text-xs text-slate-500 mt-1">${product.color || ''}${product.storage ? ` • ${product.storage}` : ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-600">${categories}</td>
+                            <td class="px-5 py-4 text-sm text-slate-600">₱${Number(product.sell_price).toLocaleString()}</td>
+                            <td class="px-5 py-4 text-sm text-slate-600">${product.stock_quantity}</td>
+                            <td class="px-5 py-4">${statusBadge}</td>
+                            <td class="px-5 py-4">${actions}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function resetForm() {
+                state.editMode = false;
+                clearAllFieldErrors();
+                $('#form-title').text('Create Product');
+                $('#save-btn').text('Create Product');
+                $('#cancel-edit-btn').addClass('hidden');
+                $('#product-id').val('');
+                $('#product-form')[0].reset();
+                $('#stock_quantity').val('0');
+                $('#is_active').prop('checked', true);
+                $('#image').val('');
+                $('#category-checkboxes input[type="checkbox"]').prop('checked', false);
+            }
+
+            function fillForm(product) {
+                state.editMode = true;
+                clearAllFieldErrors();
+                $('#form-title').text('Edit Product');
+                $('#save-btn').text('Update Product');
+                $('#cancel-edit-btn').removeClass('hidden');
+                $('#product-id').val(product.id);
+                $('#name').val(product.name || '');
+                $('#description').val(product.description || '');
+                $('#cost_price').val(product.cost_price);
+                $('#sell_price').val(product.sell_price);
+                $('#stock_quantity').val(product.stock_quantity);
+                $('#color').val(product.color || '');
+                $('#storage').val(product.storage || '');
+                $('#is_active').prop('checked', !!product.is_active);
+                $('#image').val('');
+
+                const selectedIds = getProductCategories(product).map(c => String(c.id));
+                $('#category-checkboxes input[type="checkbox"]').each(function () {
+                    $(this).prop('checked', selectedIds.includes(String($(this).val())));
+                });
+            }
+
+            function loadCategories(selectedProductId = null) {
+                return $.ajax({
+                    url: `${API_BASE}/categories`,
+                    method: 'GET',
+                    headers: authHeaders()
+                }).done(function (res) {
+                    state.categories = res.rows || [];
+                    const wrap = $('#category-checkboxes');
+                    wrap.empty();
+                    state.categories.forEach(cat => {
+                        wrap.append(`
+                            <label class="flex items-center gap-3 text-sm text-slate-700 cursor-pointer select-none rounded-lg px-2 py-1 hover:bg-slate-50">
+                                <input type="checkbox" class="category-checkbox rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]" value="${cat.id}">
+                                <span>${cat.name}</span>
+                            </label>
+                        `);
+                    });
+                    if (selectedProductId !== null) {
+                        const product = state.products.find(p => String(p.id) === String(selectedProductId));
+                        if (product) fillForm(product);
+                    }
+                });
+            }
+
+            function loadProducts() {
+                return $.ajax({
+                    url: `${API_BASE}/products/admin/all?include_deleted=true`,
+                    method: 'GET',
+                    headers: authHeaders()
+                }).done(function (res) {
+                    state.products = res.rows || [];
+                    renderProducts();
+                }).fail(function () {
+                    showMessage('Failed to load products.', 'error');
+                });
+            }
+
+            function submitForm(e) {
+                e.preventDefault();
+
+                clearAllFieldErrors();
+
+                const name = $('#name').val().trim();
+                const description = $('#description').val().trim();
+                const costPrice = Number($('#cost_price').val());
+                const sellPrice = Number($('#sell_price').val());
+                const stockQuantity = $('#stock_quantity').val() === '' ? 0 : Number($('#stock_quantity').val());
+                const selectedCategoryIds = $('#category-checkboxes input[type="checkbox"]:checked').map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (!name) {
+                    setFieldError('name', 'Product name is required.');
+                    return;
+                }
+                if (name.length < 2 || name.length > 255) {
+                    setFieldError('name', 'Product name must be between 2 and 255 characters.');
+                    return;
+                }
+                if (!Number.isFinite(costPrice) || costPrice <= 0) {
+                    setFieldError('cost_price', 'Cost price must be greater than 0.');
+                    return;
+                }
+                if (!Number.isFinite(sellPrice) || sellPrice <= 0) {
+                    setFieldError('sell_price', 'Sell price must be greater than 0.');
+                    return;
+                }
+                if (sellPrice <= costPrice) {
+                    setFieldError('sell_price', 'Sell price must be greater than cost price.');
+                    return;
+                }
+                if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+                    setFieldError('stock_quantity', 'Stock quantity must be a whole number greater than or equal to 0.');
+                    return;
+                }
+                if (!selectedCategoryIds.length) {
+                    setFieldError('categories', 'Select at least one category.');
+                    return;
+                }
+
+                const id = $('#product-id').val();
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('description', description);
+                formData.append('cost_price', String(costPrice));
+                formData.append('sell_price', String(sellPrice));
+                formData.append('stock_quantity', String(stockQuantity));
+                formData.append('color', $('#color').val().trim());
+                formData.append('storage', $('#storage').val().trim());
+                formData.append('is_active', $('#is_active').is(':checked') ? 'true' : 'false');
+
+                if (selectedCategoryIds.length) {
+                    if (selectedCategoryIds.length === 1) {
+                        formData.append('category_id', selectedCategoryIds[0]);
+                    } else {
+                        formData.append('category_ids', JSON.stringify(selectedCategoryIds));
+                    }
+                }
+
+                const file = $('#image')[0].files[0];
+                if (file) formData.append('image', file);
+
+                const ajaxOptions = {
+                    url: id ? `${API_BASE}/products/admin/${id}` : `${API_BASE}/products/admin`,
+                    method: id ? 'PUT' : 'POST',
+                    headers: authHeaders(),
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                };
+
+                $.ajax(ajaxOptions).done(function () {
+                    showMessage(id ? 'Product updated successfully.' : 'Product created successfully.');
+                    resetForm();
+                    loadProducts();
+                }).fail(function (xhr) {
+                    showServerValidationError(xhr);
+                });
+            }
+
+            $('#product-form').on('submit', submitForm);
+            $('#refresh-btn').on('click', function () { loadProducts(); });
+            $('#status-filter').on('change', renderProducts);
+            $('#cancel-edit-btn').on('click', function () { resetForm(); });
+            $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
+            $('#auth-btn').on('click', function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+
+            $(document).on('click', '.edit-btn', function () {
+                const id = $(this).data('id');
+                const product = state.products.find(p => String(p.id) === String(id));
+                if (!product) return;
+                fillForm(product);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            $(document).on('click', '.status-btn', function () {
+                const id = $(this).data('id');
+                const active = $(this).data('active') === 1 || $(this).data('active') === '1';
+                $.ajax({
+                    url: `${API_BASE}/products/admin/${id}/status`,
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    contentType: 'application/json',
+                    data: JSON.stringify({ is_active: !active })
+                }).done(function () {
+                    showMessage(`Product ${!active ? 'activated' : 'deactivated'} successfully.`);
+                    loadProducts();
+                }).fail(function (xhr) {
+                    showMessage(xhr.responseJSON?.error || 'Unable to update product status.', 'error');
+                });
+            });
+
+            $(document).on('click', '.delete-btn', function () {
+                state.deleteId = $(this).data('id');
+                $('#delete-modal').removeClass('hidden').addClass('flex');
+            });
+
+            $('#cancel-delete-btn').on('click', function () {
+                state.deleteId = null;
+                $('#delete-modal').addClass('hidden').removeClass('flex');
+            });
+
+            $('#confirm-delete-btn').on('click', function () {
+                if (!state.deleteId) return;
+                $.ajax({
+                    url: `${API_BASE}/products/admin/${state.deleteId}`,
+                    method: 'DELETE',
+                    headers: authHeaders()
+                }).done(function () {
+                    showMessage('Product deleted successfully.');
+                    state.deleteId = null;
+                    $('#delete-modal').addClass('hidden').removeClass('flex');
+                    loadProducts();
+                }).fail(function (xhr) {
+                    $('#delete-modal').addClass('hidden').removeClass('flex');
+                    showMessage(xhr.responseJSON?.error || 'Unable to delete product.', 'error');
+                });
+            });
+
+            $(document).on('click', '.restore-btn', function () {
+                const id = $(this).data('id');
+                $.ajax({
+                    url: `${API_BASE}/products/admin/${id}/restore`,
+                    method: 'PUT',
+                    headers: authHeaders()
+                }).done(function () {
+                    showMessage('Product restored successfully.');
+                    loadProducts();
+                }).fail(function (xhr) {
+                    showMessage(xhr.responseJSON?.error || 'Unable to restore product.', 'error');
+                });
+            });
+
+            $.ajax({
+                url: `${API_BASE}/users/me`,
+                method: 'GET',
+                headers: authHeaders()
+            }).done(function (res) {
+                if (res.user.role !== 'admin') {
+                    window.location.href = 'home.html';
+                    return;
+                }
+                $('#admin-name').text(res.user.name);
+                loadCategories().done(function () {
+                    loadProducts();
+                });
+            }).fail(function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+        <footer class="bg-white py-6 px-24 w-full z-20 border-t border-gray-100">
+            <div class="max-w-[1440px] mx-auto text-center text-gray-400 text-xs">
+                MacSphere Admin Panel &mdash; Internal use only
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

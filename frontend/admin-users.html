@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - MacSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
+    </style>
+</head>
+<body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
+    <div class="w-full min-h-screen flex flex-col justify-between relative">
+        <header class="bg-white/90 backdrop-blur-md py-6 px-24 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
+            <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" id="brand-logo">
+                    <svg class="w-7 h-7 text-black stroke-current fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        <path d="M3.6 9h16.8" />
+                        <path d="M3.6 15h16.8" />
+                    </svg>
+                    <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">
+                        MACSPHERE <span class="text-[#2a52be] font-bold">ADMIN</span>
+                    </div>
+                </div>
+
+                <nav class="flex items-center space-x-8 flex-1 justify-center">
+                    <a href="admin.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Dashboard</a>
+                    <a href="admin-users.html" class="admin-nav-link text-xs font-semibold uppercase tracking-wide text-gray-900 hover:text-[#2a52be] transition">Manage Users</a>
+                    <a href="admin-products.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Products</a>
+                    <a href="admin-categories.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Categories</a>
+                    <a href="admin-orders.html" class="admin-nav-link text-xs font-medium uppercase tracking-wide text-gray-500 hover:text-[#2a52be] transition">Manage Orders</a>
+                </nav>
+
+                <div class="flex items-center space-x-6 text-gray-700 shrink-0">
+                    <span id="admin-name" class="text-xs font-medium text-gray-500"></span>
+                    <button id="auth-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium text-sm px-6 py-2.5 rounded-full shadow-md transition-all transform active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6 lg:px-8 py-10 flex-1 w-full">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-8">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.2em] font-bold text-[#2a52be] mb-2">Accounts</p>
+                    <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight">Manage Users</h1>
+                    <p class="text-slate-500 mt-2">View users, deactivate accounts, delete, and restore them when needed.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="refresh-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div id="message-box" class="hidden fixed top-28 right-6 z-50 max-w-md rounded-xl border px-4 py-3 text-sm shadow-lg"></div>
+
+            <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="font-bold text-lg">Users</h2>
+                        <p class="text-sm text-slate-500">All accounts including deleted records.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-500">Filter</label>
+                        <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deleted">Deleted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <th class="px-5 py-3">User</th>
+                                <th class="px-5 py-3">Role</th>
+                                <th class="px-5 py-3">Status</th>
+                                <th class="px-5 py-3">Deleted</th>
+                                <th class="px-5 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+                <div id="users-empty" class="hidden p-8 text-center text-slate-500">
+                    No users found.
+                </div>
+            </section>
+        </main>
+
+        <div id="delete-modal" class="hidden fixed inset-0 modal-backdrop z-50 items-center justify-center px-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                <h3 class="text-lg font-bold mb-2">Delete user?</h3>
+                <p class="text-sm text-slate-500 mb-6">This will soft delete the user. You can restore it later.</p>
+                <div class="flex justify-end gap-3">
+                    <button id="cancel-delete-btn" class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium">Cancel</button>
+                    <button id="confirm-delete-btn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="bg-white py-6 px-24 w-full z-20 border-t border-gray-100">
+            <div class="max-w-[1440px] mx-auto text-center text-gray-400 text-xs">
+                MacSphere Admin Panel &mdash; Internal use only
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/config.js"></script>
+    <script>
+        $(document).ready(function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const state = {
+                users: [],
+                deleteId: null,
+                currentUserId: null
+            };
+
+            function authHeaders() {
+                return { Authorization: `Bearer ${token}` };
+            }
+
+            function showMessage(message, type = 'success') {
+                const box = $('#message-box');
+                const classes = type === 'success'
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-red-50 border-red-200 text-red-700';
+                box.removeClass('hidden bg-green-50 bg-red-50 border-green-200 border-red-200 text-green-700 text-red-700')
+                   .addClass(classes)
+                   .text(message);
+                window.setTimeout(() => box.addClass('hidden').text(''), 3500);
+            }
+
+            function renderUsers() {
+                const filter = $('#status-filter').val();
+                let rows = state.users.slice();
+
+                if (filter === 'active') {
+                    rows = rows.filter(u => u.is_active && !u.deleted_at);
+                } else if (filter === 'inactive') {
+                    rows = rows.filter(u => !u.is_active && !u.deleted_at);
+                } else if (filter === 'deleted') {
+                    rows = rows.filter(u => u.deleted_at);
+                }
+
+                const tbody = $('#users-tbody');
+                tbody.empty();
+
+                if (!rows.length) {
+                    $('#users-empty').removeClass('hidden');
+                    return;
+                }
+
+                $('#users-empty').addClass('hidden');
+
+                rows.forEach(user => {
+                    const statusBadge = user.deleted_at
+                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
+                        : (user.is_active
+                            ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
+                            : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+
+                    const canEditRole = !user.deleted_at && String(user.id) !== String(state.currentUserId);
+                    const roleControls = canEditRole ? `
+                        <div class="flex items-center gap-2 mt-2">
+                            <select class="role-select border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" data-id="${user.id}">
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>user</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+                            </select>
+                        </div>
+                    ` : `
+                        <div class="mt-2 text-xs text-slate-400">${user.deleted_at ? 'Restore to edit role' : 'Your account'}</div>
+                    `;
+
+                    const actions = `
+                        <div class="flex items-center justify-end gap-2 flex-wrap">
+                            ${user.deleted_at ? `
+                                <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${user.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
+                            ` : `
+                                ${user.role === 'admin' ? '<span class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-slate-400 bg-slate-50 text-sm">Protected admin</span>' : `
+                                    <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${user.id}" data-active="${user.is_active ? '1' : '0'}">
+                                        <i class="fa-solid ${user.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
+                                        ${user.is_active ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${user.id}"><i class="fa-solid fa-trash"></i>Delete</button>
+                                `}
+                            `}
+                        </div>
+                    `;
+
+                    tbody.append(`
+                        <tr class="align-top">
+                            <td class="px-5 py-4">
+                                <div class="font-semibold text-slate-900">${user.name}</div>
+                                <div class="text-xs text-slate-500 mt-1">${user.email}</div>
+                                <div class="text-xs text-slate-500 mt-1">ID #${user.id}</div>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-600 capitalize">
+                                <div>${user.role}</div>
+                                ${roleControls}
+                            </td>
+                            <td class="px-5 py-4">${statusBadge}</td>
+                            <td class="px-5 py-4 text-sm text-slate-600">${user.deleted_at ? new Date(user.deleted_at).toLocaleString() : '—'}</td>
+                            <td class="px-5 py-4">${actions}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function loadUsers() {
+                return $.ajax({
+                    url: `${API_BASE}/users/admin/users?include_deleted=true`,
+                    method: 'GET',
+                    headers: authHeaders()
+                }).done(function (res) {
+                    state.users = res.users || [];
+                    renderUsers();
+                }).fail(function () {
+                    showMessage('Failed to load users.', 'error');
+                });
+            }
+
+            $('#refresh-btn').on('click', function () { loadUsers(); });
+            $('#status-filter').on('change', renderUsers);
+            $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
+            $('#auth-btn').on('click', function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+
+            $(document).on('click', '.status-btn', function () {
+                const id = $(this).data('id');
+                const active = $(this).data('active') === 1 || $(this).data('active') === '1';
+                $.ajax({
+                    url: `${API_BASE}/users/admin/users/${id}/status`,
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    contentType: 'application/json',
+                    data: JSON.stringify({ is_active: !active })
+                }).done(function () {
+                    showMessage(`User ${!active ? 'activated' : 'deactivated'} successfully.`);
+                    loadUsers();
+                }).fail(function (xhr) {
+                    showMessage(xhr.responseJSON?.message || 'Unable to update user status.', 'error');
+                });
+            });
+
+            $(document).on('change', '.role-select', function () {
+                const id = $(this).data('id');
+                const role = $(this).val();
+
+                $.ajax({
+                    url: `${API_BASE}/users/admin/users/${id}/role`,
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    contentType: 'application/json',
+                    data: JSON.stringify({ role })
+                }).done(function () {
+                    showMessage('User role updated successfully.');
+                    loadUsers();
+                }).fail(function (xhr) {
+                    showMessage(xhr.responseJSON?.message || 'Unable to update user role.', 'error');
+                    loadUsers();
+                });
+            });
+
+            $(document).on('click', '.delete-btn', function () {
+                state.deleteId = $(this).data('id');
+                $('#delete-modal').removeClass('hidden').addClass('flex');
+            });
+
+            $('#cancel-delete-btn').on('click', function () {
+                state.deleteId = null;
+                $('#delete-modal').addClass('hidden').removeClass('flex');
+            });
+
+            $('#confirm-delete-btn').on('click', function () {
+                if (!state.deleteId) return;
+                $.ajax({
+                    url: `${API_BASE}/users/admin/users/${state.deleteId}`,
+                    method: 'DELETE',
+                    headers: authHeaders()
+                }).done(function () {
+                    showMessage('User deleted successfully.');
+                    state.deleteId = null;
+                    $('#delete-modal').addClass('hidden').removeClass('flex');
+                    loadUsers();
+                }).fail(function (xhr) {
+                    $('#delete-modal').addClass('hidden').removeClass('flex');
+                    showMessage(xhr.responseJSON?.message || 'Unable to delete user.', 'error');
+                });
+            });
+
+            $(document).on('click', '.restore-btn', function () {
+                const id = $(this).data('id');
+                $.ajax({
+                    url: `${API_BASE}/users/admin/users/${id}/restore`,
+                    method: 'PUT',
+                    headers: authHeaders()
+                }).done(function () {
+                    showMessage('User restored successfully.');
+                    loadUsers();
+                }).fail(function (xhr) {
+                    showMessage(xhr.responseJSON?.message || 'Unable to restore user.', 'error');
+                });
+            });
+
+            $.ajax({
+                url: `${API_BASE}/users/me`,
+                method: 'GET',
+                headers: authHeaders()
+            }).done(function (res) {
+                if (res.user.role !== 'admin') {
+                    window.location.href = 'home.html';
+                    return;
+                }
+                state.currentUserId = res.user.id;
+                $('#admin-name').text(res.user.name);
+                loadUsers();
+            }).fail(function () {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

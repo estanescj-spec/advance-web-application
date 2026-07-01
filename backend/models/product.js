@@ -5,42 +5,39 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
-        title: {
+        name: {
             type: DataTypes.STRING(255),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: { msg: 'Name cannot be empty' },
+                len: { args: [2, 255], msg: 'Name must be between 2 and 255 characters' }
+            }
         },
         description: {
             type: DataTypes.TEXT,
             allowNull: true
         },
-        category_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'categories',
-                key: 'id'
-            }
-        },
-        seller_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'users',
-                key: 'id'
-            }
-        },
         cost_price: {
             type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                min: { args: [0], msg: 'Cost price cannot be negative' }
+            }
         },
         sell_price: {
             type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                min: { args: [0], msg: 'Sell price cannot be negative' }
+            }
         },
         stock_quantity: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 0
+            defaultValue: 0,
+            validate: {
+                min: { args: [0], msg: 'Stock quantity cannot be negative' }
+            }
         },
         color: {
             type: DataTypes.STRING(50),
@@ -50,27 +47,29 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true
         },
-        warranty: {
-            type: DataTypes.STRING(100),
-            allowNull: true
-        },
-        status: {
-            type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-            allowNull: false,
-            defaultValue: 'pending'
-        },
-        is_featured: {
+        is_active: {
             type: DataTypes.BOOLEAN,
-            defaultValue: false
+            allowNull: false,
+            defaultValue: true
         },
         img_path: {
             type: DataTypes.STRING(255),
-            allowNull: true
+            allowNull: true,
+            validate: {
+                isValidImagePath(value) {
+                    if (!value) return;
+                    if (!/\.(jpg|jpeg|png|webp)$/i.test(value)) {
+                        throw new Error('Image path must end in .jpg, .jpeg, .png, or .webp');
+                    }
+                }
+            }
         }
     }, {
         tableName: 'products',
         timestamps: true,
-        underscored: true
+        underscored: true,
+        paranoid: true,
+        deletedAt: 'deleted_at'
     });
 
     return Product;
