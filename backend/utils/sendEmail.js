@@ -1,9 +1,11 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-    // If SMTP_HOST is not set, mock it by logging to console to avoid crashes
-    if (!process.env.SMTP_HOST || process.env.SMTP_HOST.includes('mailtrap')) {
-        console.log(`[MOCK EMAIL SENT]`);
+    // If no SMTP is configured at all, log the email content to the console
+    // so local development doesn't crash. Once SMTP_HOST is set (e.g. Mailtrap),
+    // this always sends a real email through that SMTP server.
+    if (!process.env.SMTP_HOST) {
+        console.log(`[EMAIL - no SMTP configured, logging instead]`);
         console.log(`To: ${options.email}`);
         console.log(`Subject: ${options.subject}`);
         console.log(`Message: ${options.message}`);
@@ -28,10 +30,9 @@ const sendEmail = async (options) => {
         };
 
         await transporter.sendMail(message);
-        console.log(`Email successfully sent to ${options.email}`);
+        console.log(`Email sent to ${options.email}`);
     } catch (error) {
         console.error('Email sending failed:', error.message);
-        console.log(`[MOCK EMAIL FALLBACK] To: ${options.email} | Msg: ${options.message}`);
     }
 };
 

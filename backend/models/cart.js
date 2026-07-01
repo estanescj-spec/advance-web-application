@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-    const Wishlist = sequelize.define('Wishlist', {
+    const Cart = sequelize.define('Cart', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -21,24 +21,22 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'id'
             }
         },
-        wishlist_category: {
-            type: DataTypes.STRING(100),
+        quantity: {
+            type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 'General'
-        },
-        notify_discounts: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: true
-        },
-        notify_restock: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: true
+            defaultValue: 1,
+            validate: {
+                min: { args: [1], msg: 'Quantity must be at least 1' }
+            }
         }
     }, {
-        tableName: 'wishlists',
+        tableName: 'carts',
         timestamps: true,
-        underscored: true
+        underscored: true,
+        indexes: [
+            { unique: true, fields: ['user_id', 'product_id'] } // prevent duplicate rows for the same product
+        ]
     });
 
-    return Wishlist;
+    return Cart;
 };

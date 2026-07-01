@@ -13,33 +13,21 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'id'
             }
         },
-        address_line: {
-            type: DataTypes.STRING(255),
-            allowNull: false
-        },
-        zipcode: {
-            type: DataTypes.STRING(20),
-            allowNull: false
-        },
-        city: {
-            type: DataTypes.STRING(100),
-            allowNull: false
-        },
-        total_price: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-        promo_code: {
-            type: DataTypes.STRING(50),
-            allowNull: true
+        address_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'addresses',
+                key: 'id'
+            }
         },
         payment_method: {
-            type: DataTypes.STRING(50),
+            type: DataTypes.ENUM('Cash on Delivery', 'Credit Card', 'Debit Card', 'GCash'),
             allowNull: false,
             defaultValue: 'Cash on Delivery'
         },
         status: {
-            type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
+            type: DataTypes.ENUM('pending', 'completed', 'cancelled'),
             allowNull: false,
             defaultValue: 'pending'
         },
@@ -47,10 +35,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW
-        },
-        date_shipped: {
-            type: DataTypes.DATE,
-            allowNull: true
         }
     }, {
         tableName: 'orders',

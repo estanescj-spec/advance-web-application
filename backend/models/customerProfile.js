@@ -13,21 +13,25 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'id'
             }
         },
-        fname: {
-            type: DataTypes.STRING(255),
-            allowNull: true
-        },
-        lname: {
-            type: DataTypes.STRING(255),
-            allowNull: true
-        },
         phone: {
             type: DataTypes.STRING(20),
-            allowNull: true
+            allowNull: true,
+            validate: {
+                is: {
+                    args: /^[0-9+\-\s()]{7,20}$/,
+                    msg: 'Phone number format is invalid'
+                }
+            }
         },
         image_path: {
             type: DataTypes.STRING(255),
-            allowNull: true
+            allowNull: true,
+            validate: {
+                is: {
+                    args: /\.(jpg|jpeg|png|webp)$/i,
+                    msg: 'Image path must end in .jpg, .jpeg, .png, or .webp'
+                }
+            }
         }
     }, {
         tableName: 'customer_profiles',
