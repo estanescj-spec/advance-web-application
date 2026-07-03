@@ -3,6 +3,8 @@ const app = express();
 const cors = require('cors');
 const path = require('path');
 
+app.use(express.static(path.join(__dirname, "../frontend")));
+
 // Routers
 const userRouter = require('./routes/userRoutes');
 const categoryRouter = require('./routes/categoryRoutes');
@@ -11,6 +13,7 @@ const cartRouter = require('./routes/cartRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const orderRouter = require('./routes/orderRoutes');
 const reportRouter = require('./routes/reportRoutes');
+const addressRouter = require('./routes/addressRoutes');
 
 // Middlewares
 app.use(cors());
@@ -27,5 +30,6 @@ app.use('/api/v1/cart', cartRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/reports', reportRouter);
+app.use('/api/v1/addresses', addressRouter);
 
 module.exports = app;

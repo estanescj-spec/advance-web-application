@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - MacSphere</title>
+    <meta name="description" content="Secure checkout for your MacSphere order.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 9999;
+            min-width: 220px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+        }
+        #toast.show   { opacity: 1; transform: translateY(0); }
+        #toast.success { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; }
+        #toast.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
+
+        .dropdown:hover .dropdown-menu { display: block; }
+        
+        /* Address Radio Button Styling */
+        input[type="radio"]:checked + .address-card {
+            border-color: #2a52be;
+            background-color: #eff4ff;
+        }
+        input[type="radio"]:checked + .payment-card {
+            border-color: #2a52be;
+            background-color: #eff4ff;
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] min-h-screen w-screen overflow-y-auto m-0 p-0">
+
+    <div id="toast"><i id="toast-icon"></i><span id="toast-msg"></span></div>
+
+    <div class="w-full min-h-screen flex flex-col">
+
+        <!-- HEADER -->
+        <header class="bg-white/90 backdrop-blur-md py-5 px-10 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] sticky top-0">
+            <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
+
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" id="brand-logo">
+                    <svg class="w-7 h-7 text-black stroke-current fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        <path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/>
+                    </svg>
+                    <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">MACSPHERE</div>
+                </div>
+
+                <div class="flex items-center space-x-8 flex-1 max-w-2xl">
+                    <div class="relative dropdown shrink-0">
+                        <button class="flex items-center space-x-1.5 text-gray-700 font-medium text-xs tracking-wide uppercase hover:text-black transition py-2">
+                            <span>Categories</span>
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <div id="category-dropdown-menu" class="dropdown-menu hidden absolute left-0 mt-0 w-44 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-40">
+                            <a href="home.html" class="block px-4 py-2.5 text-xs text-gray-900 font-semibold hover:bg-gray-50 transition">Home</a>
+                            <div id="nav-category-list" class="text-xs text-gray-400 px-4 py-2">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 text-sm">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="search-input" placeholder="Search products..." class="w-full bg-gray-50 text-xs font-medium text-gray-800 placeholder-gray-400 pl-10 pr-4 py-2.5 rounded-full border border-gray-100 focus:outline-none focus:border-blue-200 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-7 text-gray-700 shrink-0">
+                    <button id="profile-btn" class="hover:text-black transition text-lg" title="Profile">
+                        <i class="fa-regular fa-user"></i>
+                    </button>
+                    <button id="cart-btn" class="flex items-center space-x-1.5 text-gray-800 hover:text-black transition relative" title="Cart">
+                        <i class="fa-solid fa-shopping-bag text-lg"></i>
+                        <span id="cart-count" class="text-sm">0</span>
+                    </button>
+                    <button id="auth-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium text-sm px-7 py-2.5 rounded-full shadow-md shadow-blue-600/10 transition-all transform active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- PAGE TITLE -->
+        <section class="bg-white border-b border-slate-100 px-10 py-8">
+            <div class="max-w-[1440px] mx-auto">
+                <h1 class="text-3xl font-extrabold text-[#0f172a] tracking-tight">Checkout</h1>
+                <p class="text-slate-500 mt-2">Complete your purchase</p>
+            </div>
+        </section>
+
+        <!-- CHECKOUT CONTENT -->
+        <main class="flex-1 max-w-[1440px] mx-auto w-full px-10 py-10">
+            <form id="checkout-form" class="flex flex-col lg:flex-row gap-10">
+                
+                <!-- LEFT COLUMN: Addresses & Payment -->
+                <div class="flex-1 space-y-8">
+                    
+                    <!-- Delivery Address -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-location-dot text-[#2a52be] mr-2"></i> 1. Delivery Address</h2>
+                            <a href="addresses.html" class="text-sm font-semibold text-[#2a52be] hover:underline">Manage Addresses</a>
+                        </div>
+                        
+                        <div id="address-list" class="space-y-4">
+                            <!-- Injected addresses -->
+                            <div class="text-center py-6 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+                        <h2 class="text-lg font-bold text-slate-900 mb-6"><i class="fa-solid fa-credit-card text-[#2a52be] mr-2"></i> 2. Payment Method</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="payment_method" value="Cash on Delivery" class="peer sr-only" checked>
+                                <div class="payment-card border-2 border-slate-100 rounded-xl p-5 hover:bg-slate-50 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="font-semibold text-slate-800 text-sm">Cash on Delivery</div>
+                                        <i class="fa-solid fa-money-bill-wave text-slate-400"></i>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">Pay with cash upon delivery</p>
+                                </div>
+                                <div class="absolute top-4 right-4 text-[#2a52be] opacity-0 peer-checked:opacity-100 transition">
+                                    <i class="fa-solid fa-circle-check text-xl"></i>
+                                </div>
+                            </label>
+
+                            <label class="relative cursor-pointer">
+                                <input type="radio" name="payment_method" value="Credit Card" class="peer sr-only">
+                                <div class="payment-card border-2 border-slate-100 rounded-xl p-5 hover:bg-slate-50 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="font-semibold text-slate-800 text-sm">Credit / Debit Card</div>
+                                        <i class="fa-brands fa-cc-visa text-slate-400 text-xl"></i>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">Secure online payment</p>
+                                </div>
+                                <div class="absolute top-4 right-4 text-[#2a52be] opacity-0 peer-checked:opacity-100 transition">
+                                    <i class="fa-solid fa-circle-check text-xl"></i>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: Order Summary -->
+                <div class="w-full lg:w-[400px] shrink-0">
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 sticky top-32">
+                        <h2 class="text-lg font-bold text-slate-900 mb-6">Order Summary</h2>
+                        
+                        <div id="checkout-items" class="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
+                            <!-- Injected order items -->
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6 space-y-3 mb-6">
+                            <div class="flex justify-between text-sm text-slate-500">
+                                <span>Subtotal</span>
+                                <span id="summary-subtotal" class="font-medium text-slate-700">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-slate-500">
+                                <span>Shipping</span>
+                                <span class="font-medium text-emerald-600">Free</span>
+                            </div>
+                            <div class="flex justify-between text-lg font-extrabold text-slate-900 pt-3 border-t border-slate-100">
+                                <span>Total</span>
+                                <span id="summary-total">₱0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="place-order-btn" class="w-full bg-[#2a52be] hover:bg-[#1f3d90] text-white font-semibold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all transform active:scale-[0.98] flex justify-center items-center gap-2">
+                            Place Order <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </main>
+
+        <footer class="bg-white py-12 px-10 w-full mt-auto border-t border-gray-100">
+            <div class="max-w-[1440px] mx-auto text-center text-gray-500 text-sm">
+                &copy; 2026 MacSphere. All rights reserved.
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/config.js"></script>
+    <script>
+    $(document).ready(function () {
+        let cartItems = [];
+        let addresses = [];
+
+        function authHeaders() {
+            const token = localStorage.getItem('token');
+            if (!token) window.location.href = 'login.html';
+            return { Authorization: `Bearer ${token}` };
+        }
+
+        function isSignedIn() { return !!localStorage.getItem('token'); }
+
+        function showToast(msg, type = 'success') {
+            const $toast = $('#toast');
+            const $icon = $('#toast-icon');
+            $toast.removeClass('success error show');
+            
+            if (type === 'success') {
+                $toast.addClass('success');
+                $icon.attr('class', 'fa-solid fa-check-circle');
+            } else {
+                $toast.addClass('error');
+                $icon.attr('class', 'fa-solid fa-circle-exclamation');
+            }
+            
+            $('#toast-msg').text(msg);
+            $toast.addClass('show');
+            setTimeout(() => { $toast.removeClass('show'); }, 3000);
+        }
+
+        function updateCartBadge() {
+            $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
+            .done(function (res) {
+                const totalItems = (res.rows || []).reduce((acc, item) => acc + item.quantity, 0);
+                $('#cart-count').text(totalItems);
+            });
+        }
+
+        function loadCheckoutData() {
+            // Load Cart
+            $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
+            .done(function (res) {
+                cartItems = res.rows || [];
+                if (cartItems.length === 0) {
+                    window.location.href = 'cart.html';
+                    return;
+                }
+                renderCartSummary();
+            })
+            .fail(function () { showToast('Could not load cart', 'error'); });
+
+            // Load Addresses
+            $.ajax({ url: `${API_BASE}/addresses/my`, method: 'GET', headers: authHeaders() })
+            .done(function (res) {
+                addresses = res.rows || [];
+                renderAddresses();
+            })
+            .fail(function () { showToast('Could not load addresses', 'error'); });
+        }
+
+        function renderCartSummary() {
+            const $container = $('#checkout-items').empty();
+            let subtotal = 0;
+
+            cartItems.forEach(item => {
+                const p = item.Product || {};
+                const price = parseFloat(p.sell_price || 0);
+                const lineTotal = price * item.quantity;
+                subtotal += lineTotal;
+
+                const img = p.img_path ? `http://localhost:4000/${p.img_path}` : 'https://placehold.co/80x80/e2e8f0/334155?text=No+Img';
+
+                $container.append(`
+                    <div class="flex items-center gap-4">
+                        <img src="${img}" class="w-14 h-14 object-cover rounded-lg bg-slate-50 border border-slate-100">
+                        <div class="flex-1">
+                            <div class="text-sm font-semibold text-slate-800 line-clamp-1">${p.name}</div>
+                            <div class="text-xs text-slate-500 mt-1">Qty: ${item.quantity} &times; ₱${price.toLocaleString()}</div>
+                        </div>
+                        <div class="font-bold text-sm text-slate-900">₱${lineTotal.toLocaleString()}</div>
+                    </div>
+                `);
+            });
+
+            $('#summary-subtotal').text(`₱${subtotal.toLocaleString()}`);
+            $('#summary-total').text(`₱${subtotal.toLocaleString()}`);
+        }
+
+        function renderAddresses() {
+            const $container = $('#address-list').empty();
+
+            if (addresses.length === 0) {
+                $container.html(`
+                    <div class="text-center py-6 bg-slate-50 rounded-xl border border-slate-100">
+                        <i class="fa-solid fa-map-location-dot text-3xl text-slate-300 mb-3"></i>
+                        <p class="text-sm text-slate-600 mb-4">You have no saved addresses.</p>
+                        <a href="addresses.html" class="inline-block bg-[#2a52be] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-lg shadow-sm hover:bg-[#1f3d90] transition">Add an Address</a>
+                    </div>
+                `);
+                return;
+            }
+
+            addresses.forEach((addr, idx) => {
+                const isChecked = addr.is_default || idx === 0 ? 'checked' : '';
+                
+                $container.append(`
+                    <label class="relative block cursor-pointer">
+                        <input type="radio" name="address_id" value="${addr.id}" class="peer sr-only" ${isChecked}>
+                        <div class="address-card border-2 border-slate-100 rounded-xl p-5 hover:bg-slate-50 transition">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="font-semibold text-slate-800 text-sm">Address #${addr.id} ${addr.is_default ? '<span class="ml-2 bg-emerald-100 text-emerald-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Default</span>' : ''}</div>
+                            </div>
+                            <div class="text-sm text-slate-600">${addr.address_line}</div>
+                            <div class="text-sm text-slate-600">${addr.city}, ${addr.zipcode}</div>
+                        </div>
+                        <div class="absolute top-5 right-5 text-[#2a52be] opacity-0 peer-checked:opacity-100 transition">
+                            <i class="fa-solid fa-circle-check text-xl"></i>
+                        </div>
+                    </label>
+                `);
+            });
+        }
+
+        $('#checkout-form').on('submit', function (e) {
+            e.preventDefault();
+
+            const address_id = $('input[name="address_id"]:checked').val();
+            const payment_method = $('input[name="payment_method"]:checked').val();
+
+            if (!address_id) {
+                showToast('Please select a delivery address.', 'error');
+                return;
+            }
+
+            const btn = $('#place-order-btn');
+            btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...');
+
+            $.ajax({
+                url: `${API_BASE}/orders`,
+                method: 'POST',
+                headers: authHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify({ address_id, payment_method })
+            })
+            .done(function (res) {
+                showToast('Order placed successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'orders.html';
+                }, 1500);
+            })
+            .fail(function (xhr) {
+                showToast(xhr.responseJSON?.error || 'Failed to place order.', 'error');
+                btn.prop('disabled', false).html('Place Order <i class="fa-solid fa-arrow-right"></i>');
+            });
+        });
+
+        /* ── header logic ────────────────────────────────────────── */
+        $('#profile-btn').on('click', () => window.location.href = isSignedIn() ? 'profile.html' : 'login.html');
+        $('#brand-logo').on('click', () => window.location.href = 'home.html');
+        $('#cart-btn').on('click', () => window.location.href = 'cart.html');
+
+        $('#auth-btn').on('click', function () {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        function loadCategories() {
+            $.ajax({ url: `${API_BASE}/categories`, method: 'GET' })
+            .done(function (res) {
+                const cats = res.rows || [];
+                const $navList = $('#nav-category-list').empty();
+                cats.forEach(function (cat) {
+                    $navList.append(
+                        `<a href="shop.html?category=${encodeURIComponent(cat.name)}" class="block px-4 py-2.5 text-xs text-gray-500 font-medium hover:bg-gray-50 hover:text-gray-900 transition">${cat.name}</a>`
+                    );
+                });
+            });
+        }
+        
+        $('#search-input').on('keypress', function (e) {
+            if (e.which === 13) {
+                const query = $(this).val().trim();
+                if (query) {
+                    window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
+                } else {
+                    window.location.href = 'shop.html';
+                }
+            }
+        });
+
+        loadCategories();
+        updateCartBadge();
+        loadCheckoutData();
+    });
+    </script>
+</body>
+</html>

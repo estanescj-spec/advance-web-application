@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
         },
         name: {
             type: DataTypes.STRING(255),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                notEmpty: { msg: 'Name cannot be empty' },
+                len: { args: [2, 100], msg: 'Name must be between 2 and 100 characters' }
+            }
         },
         email: {
             type: DataTypes.STRING(255),
@@ -21,7 +25,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         password: {
             type: DataTypes.STRING(255),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                len: { args: [6, 255], msg: 'Password must be at least 6 characters' }
+            }
         },
         role: {
             type: DataTypes.ENUM('admin', 'user'),
