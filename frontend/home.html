@@ -250,6 +250,20 @@
             });
 
             /* ============================================================
+               SEARCH
+               ============================================================ */
+            $('#search-input').on('keypress', function (e) {
+                if (e.which === 13) {
+                    const query = $(this).val().trim();
+                    if (query) {
+                        window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
+                    } else {
+                        window.location.href = 'shop.html';
+                    }
+                }
+            });
+
+            /* ============================================================
                CATEGORIES DROPDOWN (loaded from backend)
                ============================================================ */
             function loadCategories() {
