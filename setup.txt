@@ -1,0 +1,49 @@
+Setting up the system for the first time is straightforward! Since this is a Node.js + Express application with a MySQL database using Sequelize, here is your step-by-step guide:
+
+### 1. Database Preparation
+This application uses **MySQL**. 
+- Ensure you have MySQL installed and running on your machine (via XAMPP, MySQL Workbench, or Docker).
+- Create a new database for the application (e.g., using a command like `CREATE DATABASE macsphere;` or whatever name you prefer).
+
+### 2. Configure Environment Variables
+Inside your `backend` directory, you need a `.env` file to store your configuration (if you don't have one, create it). It should look something like this:
+```env
+# Server Port
+PORT=4000
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=your_database_name
+DB_DIALECT=mysql
+
+# JWT Authentication Secret
+JWT_SECRET=your_super_secret_jwt_key
+```
+
+### 3. Install Dependencies & Start the Backend
+Open your PowerShell/Terminal and follow these commands:
+
+1. Navigate to the backend folder:
+   ```powershell
+   cd c:\Users\Charlie\Downloads\web-app\backend
+   ```
+2. Install all the required Node packages (Express, Sequelize, etc.):
+   ```powershell
+   npm install
+   ```
+3. Start the server:
+   ```powershell
+   npm start
+   ```
+
+*(Note: Because the backend uses Sequelize, when you run `npm start` for the first time, it will automatically connect to your MySQL database, create all the necessary tables, and inject any default admin accounts!)*
+
+### 4. Access the Application
+The frontend files (HTML/CSS/JS) are configured to be served directly from your Node.js backend. 
+
+Once your server is running, simply open your web browser and go to:
+**[http://localhost:4000/home.html](http://localhost:4000/home.html)**
+
+That's it! Your system should now be fully up and running.
