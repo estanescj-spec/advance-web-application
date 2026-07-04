@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const reviewController = require('../controllers/reviewController');
 const { isAuthenticatedUser } = require('../middlewares/auth');
-const upload = require('../middlewares/upload');
+const upload = require('../utils/multer.js');
 
 // Public
 router.get('/product/:product_id', reviewController.getProductReviews);

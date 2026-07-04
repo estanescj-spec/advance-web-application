@@ -248,15 +248,38 @@
             });
         }
 
+        function getSelectedCartIds() {
+            try {
+                const raw = sessionStorage.getItem('checkoutCartIds');
+                if (!raw) return null; // null = no selection info, fall back to full cart
+                const ids = JSON.parse(raw);
+                return Array.isArray(ids) && ids.length ? ids : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
         function loadCheckoutData() {
             // Load Cart
             $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
             .done(function (res) {
-                cartItems = res.rows || [];
-                if (cartItems.length === 0) {
+                const allItems = res.rows || [];
+                if (allItems.length === 0) {
                     window.location.href = 'cart.html';
                     return;
                 }
+
+                const selectedIds = getSelectedCartIds();
+                cartItems = selectedIds
+                    ? allItems.filter(item => selectedIds.includes(item.id))
+                    : allItems; // no selection stored (e.g. direct nav) -> checkout everything
+
+                if (cartItems.length === 0) {
+                    showToast('No items were selected for checkout.', 'error');
+                    setTimeout(() => { window.location.href = 'cart.html'; }, 1500);
+                    return;
+                }
+
                 renderCartSummary();
             })
             .fail(function () { showToast('Could not load cart', 'error'); });
@@ -347,14 +370,17 @@
             const btn = $('#place-order-btn');
             btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...');
 
+            const cart_item_ids = cartItems.map(item => item.id);
+
             $.ajax({
                 url: `${API_BASE}/orders`,
                 method: 'POST',
                 headers: authHeaders(),
                 contentType: 'application/json',
-                data: JSON.stringify({ address_id, payment_method })
+                data: JSON.stringify({ address_id, payment_method, cart_item_ids })
             })
             .done(function (res) {
+                sessionStorage.removeItem('checkoutCartIds');
                 showToast('Order placed successfully!', 'success');
                 setTimeout(() => {
                     window.location.href = 'orders.html';

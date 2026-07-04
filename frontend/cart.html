@@ -145,7 +145,10 @@
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h2 class="font-bold text-lg text-slate-900">Cart Items</h2>
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="select-all-checkbox" class="w-4 h-4 accent-[#2a52be] cursor-pointer">
+                                <h2 class="font-bold text-lg text-slate-900">Cart Items</h2>
+                            </div>
                             <button id="clear-cart-btn" class="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1.5 transition">
                                 <i class="fa-solid fa-trash-can"></i> Clear Cart
                             </button>
@@ -247,6 +250,7 @@
 
         /* ── state ────────────────────────────────────────────────── */
         let cartItems = [];
+        let selectedIds = new Set();
 
         /* ── load cart ────────────────────────────────────────────── */
         function loadCart() {
@@ -257,6 +261,7 @@
             $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
             .done(function (res) {
                 cartItems = res.rows || [];
+                selectedIds = new Set(cartItems.map(i => i.id)); // all selected by default
                 renderCart();
             })
             .fail(function () {
@@ -292,6 +297,7 @@
 
                 $list.append(`
                 <div class="cart-row flex items-center gap-4 px-6 py-5 border-b border-slate-100 last:border-b-0" id="row-${item.id}">
+                    <input type="checkbox" class="item-checkbox w-4 h-4 accent-[#2a52be] cursor-pointer shrink-0" data-cart-id="${item.id}" ${selectedIds.has(item.id) ? 'checked' : ''}>
                     <img src="${imgSrc}" alt="${p.name || 'Product'}"
                          class="w-20 h-16 object-contain bg-slate-50 rounded-xl p-2 shrink-0"
                          onerror="this.src='https://placehold.co/120x90/f1f5f9/94a3b8?text=?'">
@@ -332,6 +338,8 @@
             let total = 0;
 
             cartItems.forEach(function (item) {
+                if (!selectedIds.has(item.id)) return; // skip unchecked items
+
                 const p   = item.Product || {};
                 const sub = parseFloat(p.sell_price || 0) * item.quantity;
                 total += sub;
@@ -342,8 +350,40 @@
                 </div>`);
             });
 
+            if (!selectedIds.size) {
+                $lines.append('<p class="text-xs text-slate-400 italic">No items selected.</p>');
+            }
+
             $('#summary-total').text(phpCurrency(total));
+
+            // keep checkout button in sync with selection
+            $('#checkout-btn').prop('disabled', selectedIds.size === 0);
+
+            // keep "select all" checkbox in sync
+            $('#select-all-checkbox').prop('checked', cartItems.length > 0 && selectedIds.size === cartItems.length);
         }
+
+        /* ── checkbox handlers ────────────────────────────────────── */
+        $(document).on('change', '.item-checkbox', function () {
+            const cartId = $(this).data('cart-id');
+            if ($(this).is(':checked')) {
+                selectedIds.add(cartId);
+            } else {
+                selectedIds.delete(cartId);
+            }
+            renderSummary();
+        });
+
+        $('#select-all-checkbox').on('change', function () {
+            const checked = $(this).is(':checked');
+            if (checked) {
+                selectedIds = new Set(cartItems.map(i => i.id));
+            } else {
+                selectedIds.clear();
+            }
+            $('.item-checkbox').prop('checked', checked);
+            renderSummary();
+        });
 
         /* ── cart badge ───────────────────────────────────────────── */
         function updateCartBadge() {
@@ -407,6 +447,7 @@
                 headers: authHeaders()
             }).done(function () {
                 cartItems = cartItems.filter(i => i.id !== cartId);
+                selectedIds.delete(cartId);
                 $row.slideUp(200, function () { $(this).remove(); });
                 showToast('Item removed from cart.', 'success');
                 renderSummary();
@@ -439,6 +480,8 @@
 
         /* ── checkout ─────────────────────────────────────────────── */
         $('#checkout-btn').on('click', function () {
+            if (!selectedIds.size) return;
+            sessionStorage.setItem('checkoutCartIds', JSON.stringify([...selectedIds]));
             window.location.href = 'checkout.html';
         });
 
