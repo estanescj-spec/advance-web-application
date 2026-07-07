@@ -23,15 +23,12 @@
             color: #1e293b;
             border-left: 3px solid #e2e8f0;
         }
-
-        .dropdown:hover .dropdown-menu { display: block; }
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen w-screen overflow-y-auto m-0 p-0">
 
     <div class="w-full min-h-screen flex flex-col">
 
-        <!-- HEADER -->
         <header class="bg-white/90 backdrop-blur-md py-5 px-10 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] sticky top-0">
             <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
 
@@ -44,24 +41,11 @@
                     <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">MACSPHERE</div>
                 </div>
 
-                <div class="flex items-center space-x-8 flex-1 max-w-2xl">
-                    <div class="relative dropdown shrink-0">
-                        <button class="flex items-center space-x-1.5 text-gray-700 font-medium text-xs tracking-wide uppercase hover:text-black transition py-2">
-                            <span>Categories</span>
-                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                        </button>
-                        <div id="category-dropdown-menu" class="dropdown-menu hidden absolute left-0 mt-0 w-44 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-40">
-                            <a href="home.html" class="block px-4 py-2.5 text-xs text-gray-900 font-semibold hover:bg-gray-50 transition">Home</a>
-                            <div id="nav-category-list" class="text-xs text-gray-400 px-4 py-2">Loading...</div>
-                        </div>
-                    </div>
-
-                    <div class="relative flex-1">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 text-sm">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </span>
-                        <input type="text" id="search-input" placeholder="Search products..." class="w-full bg-gray-50 text-xs font-medium text-gray-800 placeholder-gray-400 pl-10 pr-4 py-2.5 rounded-full border border-gray-100 focus:outline-none focus:border-blue-200 focus:bg-white transition">
-                    </div>
+                <div class="flex-1 flex items-center justify-start">
+                    <a href="shop.html" class="flex items-center space-x-2 text-slate-600 hover:text-black font-medium text-sm transition-colors py-2 px-4 rounded-xl hover:bg-slate-50">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                        <span>Back to Shop</span>
+                    </a>
                 </div>
 
                 <div class="flex items-center space-x-7 text-gray-700 shrink-0">
@@ -81,11 +65,9 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT -->
         <main class="flex-1 max-w-[1440px] mx-auto w-full px-10 py-10">
             <div class="flex flex-col lg:flex-row gap-8">
                 
-                <!-- SIDEBAR -->
                 <aside class="w-full lg:w-64 shrink-0">
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden py-3">
                         <a href="profile.html" class="sidebar-link block px-6 py-3 text-sm text-slate-600 border-l-[3px] border-transparent">
@@ -100,7 +82,6 @@
                     </div>
                 </aside>
 
-                <!-- CONTENT AREA -->
                 <div class="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-8 relative min-h-[400px]">
                     
                     <div id="loading" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-2xl">
@@ -111,8 +92,7 @@
                     <p class="text-sm text-slate-500 mb-8">View and track your past orders.</p>
 
                     <div id="orders-container" class="space-y-6">
-                        <!-- Orders rendered here -->
-                    </div>
+                        </div>
                     
                     <div id="no-orders" class="hidden text-center py-16">
                         <i class="fa-solid fa-box-open text-4xl text-slate-200 mb-3"></i>
@@ -125,7 +105,6 @@
             </div>
         </main>
 
-        <!-- FOOTER -->
         <footer class="bg-white py-6 px-10 border-t border-gray-100 mt-auto">
             <div class="max-w-[1440px] mx-auto text-center text-gray-400 text-xs">
                 &copy; 2025 MacSphere &mdash; All Rights Reserved
@@ -231,32 +210,7 @@
         }
 
         /* ── header logic ────────────────────────────────────────── */
-        $('#profile-btn').on('click', () => window.location.href = isSignedIn() ? 'profile.html' : 'login.html');
-
-        function loadCategories() {
-            $.ajax({ url: `${API_BASE}/categories`, method: 'GET' })
-            .done(function (res) {
-                const cats = res.rows || [];
-                const $navList = $('#nav-category-list').empty();
-                cats.forEach(function (cat) {
-                    $navList.append(
-                        `<a href="shop.html?category=${encodeURIComponent(cat.name)}" class="block px-4 py-2.5 text-xs text-gray-500 font-medium hover:bg-gray-50 hover:text-gray-900 transition">${cat.name}</a>`
-                    );
-                });
-            });
-        }
-        loadCategories();
-
-        $('#search-input').on('keypress', function (e) {
-            if (e.which === 13) {
-                const query = $(this).val().trim();
-                if (query) {
-                    window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
-                } else {
-                    window.location.href = 'shop.html';
-                }
-            }
-        });
+        $('#profile-btn').on('click', () => window.location.href = getToken() ? 'profile.html' : 'login.html');
 
         updateCartBadge();
         loadOrders();

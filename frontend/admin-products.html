@@ -10,6 +10,31 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
+
+        /* Infinite scroll loading indicator */
+        #scroll-loader {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        #scroll-loader.show { display: block; }
+
+        #scroll-end {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        #scroll-end.show { display: block; }
+
+        /* Scrollable table container for infinite scroll to work against */
+        #table-scroll-container {
+            max-height: 640px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
@@ -62,17 +87,24 @@
                     <button id="refresh-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium">
                         <i class="fa-solid fa-rotate"></i> Refresh
                     </button>
+                    <button id="open-create-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2a52be] hover:bg-[#1f3d90] text-white text-sm font-semibold shadow-lg shadow-blue-600/20">
+                        <i class="fa-solid fa-plus"></i> Create Product
+                    </button>
                 </div>
         </div>
 
         <div id="message-box" class="hidden fixed top-28 right-6 z-50 max-w-md rounded-xl border px-4 py-3 text-sm shadow-lg"></div>
 
-        <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div class="xl:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4">
-                    <div>
-                        <h2 class="font-bold text-lg">Products</h2>
-                        <p class="text-sm text-slate-500">Live product inventory and catalog status.</p>
+        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <h2 class="font-bold text-lg">Products</h2>
+                    <p id="products-count-label" class="text-sm text-slate-500">Live product inventory and catalog status.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-500">Search</label>
+                        <input id="search-input" type="text" placeholder="Name or description..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white w-48">
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-xs text-slate-500">Filter</label>
@@ -84,96 +116,123 @@
                         </select>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                <th class="px-5 py-3">Product</th>
-                                <th class="px-5 py-3">Categories</th>
-                                <th class="px-5 py-3">Price</th>
-                                <th class="px-5 py-3">Stock</th>
-                                <th class="px-5 py-3">Status</th>
-                                <th class="px-5 py-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="products-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
-                    </table>
-                </div>
+            </div>
+
+            <!-- Scrollable container: infinite scroll listens for scroll events here -->
+            <div id="table-scroll-container" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50 sticky top-0 z-10">
+                        <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="px-5 py-3">Product</th>
+                            <th class="px-5 py-3">Categories</th>
+                            <th class="px-5 py-3">Price</th>
+                            <th class="px-5 py-3">Stock</th>
+                            <th class="px-5 py-3">Status</th>
+                            <th class="px-5 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+                </table>
+
                 <div id="products-empty" class="hidden p-8 text-center text-slate-500">
                     No products found.
                 </div>
-            </div>
 
-            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 h-fit sticky top-24">
-                <div class="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                        <h2 id="form-title" class="font-bold text-lg">Create Product</h2>
-                        <p class="text-sm text-slate-500">Use the form to add or edit a product.</p>
-                    </div>
-                    <button id="cancel-edit-btn" class="hidden text-sm text-slate-500 hover:text-slate-900">Cancel</button>
+                <!-- Infinite scroll loading spinner -->
+                <div id="scroll-loader">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading more products...
                 </div>
 
-                <form id="product-form" class="space-y-4">
-                    <input type="hidden" id="product-id">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Name</label>
-                        <input id="name" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="MacBook Air M3">
-                        <p id="name-error" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
-                        <textarea id="description" rows="3" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Product description"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Categories</label>
-                        <div id="category-checkboxes" class="space-y-2 rounded-xl border border-slate-200 px-4 py-3 bg-white"></div>
-                        <p class="text-xs text-slate-400 mt-1">Tap or click all categories that apply.</p>
-                        <p id="categories-error" class="hidden mt-1 text-xs text-red-600"></p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Cost Price</label>
-                            <input id="cost_price" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
-                            <p id="cost_price-error" class="hidden mt-1 text-xs text-red-600"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Sell Price</label>
-                            <input id="sell_price" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
-                            <p id="sell_price-error" class="hidden mt-1 text-xs text-red-600"></p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Quantity</label>
-                            <input id="stock_quantity" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" value="0">
-                            <p id="stock_quantity-error" class="hidden mt-1 text-xs text-red-600"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Image</label>
-                            <input id="image" type="file" accept="image/*" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Color</label>
-                            <input id="color" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Space Gray">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Storage</label>
-                            <input id="storage" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="256GB SSD">
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input id="is_active" type="checkbox" checked class="rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]">
-                        <label for="is_active" class="text-sm text-slate-600">Active</label>
-                    </div>
-                        <button id="save-btn" type="submit" class="w-full rounded-xl bg-[#2a52be] hover:bg-[#1f3d90] text-white font-semibold py-3.5 shadow-lg shadow-blue-600/20 transition">
-                        Create Product
-                    </button>
-                </form>
+                <!-- Shown once all products have been loaded -->
+                <div id="scroll-end">
+                    — End of list —
+                </div>
             </div>
         </section>
     </main>
+
+    <!-- Create / Edit Product Modal -->
+    <div id="product-modal" class="hidden fixed inset-0 modal-backdrop z-50 items-center justify-center px-4 py-8 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 my-auto max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <h2 id="form-title" class="font-bold text-lg">Create Product</h2>
+                    <p class="text-sm text-slate-500">Use the form to add or edit a product.</p>
+                </div>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-slate-700 text-xl leading-none">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="product-form" class="space-y-4">
+                <input type="hidden" id="product-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Name</label>
+                    <input id="name" name="name" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="MacBook Air M3">
+                    <p id="name-error" class="hidden mt-1 text-xs text-red-600"></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                    <textarea id="description" name="description" rows="3" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Product description"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categories</label>
+                    <div id="category-checkboxes" class="space-y-2 rounded-xl border border-slate-200 px-4 py-3 bg-white max-h-40 overflow-y-auto"></div>
+                    <p class="text-xs text-slate-400 mt-1">Tap or click all categories that apply.</p>
+                    <p id="categories-error" class="hidden mt-1 text-xs text-red-600"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cost Price</label>
+                        <input id="cost_price" name="cost_price" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
+                        <p id="cost_price-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Sell Price</label>
+                        <input id="sell_price" name="sell_price" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]">
+                        <p id="sell_price-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Quantity</label>
+                        <input id="stock_quantity" name="stock_quantity" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" value="0">
+                        <p id="stock_quantity-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 col-span-1">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Color</label>
+                            <input id="color" name="color" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="Space Gray">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Storage</label>
+                            <input id="storage" name="storage" type="text" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2a52be]" placeholder="256GB SSD">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Images (up to 5)</label>
+                    <input id="image" name="image" type="file" accept="image/*" multiple class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
+                    <p id="image-error" class="hidden mt-1 text-xs text-red-600"></p>
+                    <div id="image-preview" class="flex flex-wrap gap-2 mt-3"></div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input id="is_active" name="is_active" type="checkbox" checked class="rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]">
+                    <label for="is_active" class="text-sm text-slate-600">Active</label>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancel-edit-btn" class="flex-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3.5 transition">
+                        Cancel
+                    </button>
+                    <button id="save-btn" type="submit" class="flex-1 rounded-xl bg-[#2a52be] hover:bg-[#1f3d90] text-white font-semibold py-3.5 shadow-lg shadow-blue-600/20 transition">
+                        Create Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div id="delete-modal" class="hidden fixed inset-0 modal-backdrop z-50 items-center justify-center px-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
@@ -187,6 +246,7 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="js/config.js"></script>
     <script>
         $(document).ready(function () {
@@ -196,12 +256,75 @@
                 return;
             }
 
+            /* ============================================================
+               STATE
+               ============================================================ */
+            const PAGE_SIZE = 12; // how many product rows to render per scroll "page"
+
             const state = {
-                products: [],
+                allProducts: [],      // full dataset fetched once from the API
                 categories: [],
+                filteredProducts: [], // after search + status filter applied
+                renderedCount: 0,     // how many of filteredProducts are currently in the DOM
+                isLoading: false,     // guards against duplicate loads while scrolling
                 deleteId: null,
-                editMode: false
+                editMode: false,
+                existingImages: [],   // image paths already saved on the product being edited
+                removedImages: []     // image paths marked for removal during this edit
             };
+
+            // Initialize jQuery Validation on the product form
+            $('#product-form').validate({
+                rules: {
+                    name: { required: true, minlength: 2, maxlength: 255 },
+                    description: { maxlength: 5000 },
+                    cost_price: { required: true, number: true, min: 0.01 },
+                    sell_price: { required: true, number: true, min: 0.01 },
+                    stock_quantity: { number: true, min: 0 },
+                    color: { maxlength: 50 },
+                    storage: { maxlength: 50 }
+                },
+                messages: {
+                    name: {
+                        required: 'Name is required',
+                        minlength: 'Name must be at least 2 characters',
+                        maxlength: 'Name must not exceed 255 characters'
+                    },
+                    description: { maxlength: 'Description must not exceed 5000 characters' },
+                    cost_price: {
+                        required: 'Cost price is required',
+                        number: 'Cost price must be a valid number',
+                        min: 'Cost price must be greater than 0'
+                    },
+                    sell_price: {
+                        required: 'Sell price is required',
+                        number: 'Sell price must be a valid number',
+                        min: 'Sell price must be greater than 0'
+                    },
+                    stock_quantity: {
+                        number: 'Stock quantity must be a whole number',
+                        min: 'Stock quantity cannot be negative'
+                    },
+                    color: { maxlength: 'Color must not exceed 50 characters' },
+                    storage: { maxlength: 'Storage must not exceed 50 characters' }
+                },
+                errorPlacement: function (error, element) {
+                    const fieldName = element.attr('name');
+                    const errorEl = $(`#${fieldName}-error`);
+                    if (errorEl.length) {
+                        errorEl.removeClass('hidden').text(error.text());
+                    } else {
+                        error.insertAfter(element);
+                    }
+                },
+                success: function (label, element) {
+                    const fieldName = $(element).attr('name');
+                    const errorEl = $(`#${fieldName}-error`);
+                    if (errorEl.length) {
+                        errorEl.addClass('hidden').text('');
+                    }
+                }
+            });
 
             function showMessage(message, type = 'success') {
                 const box = $('#message-box');
@@ -216,32 +339,27 @@
 
             function clearFieldError(fieldId) {
                 const el = $(`#${fieldId}-error`);
-                if (el.length) {
-                    el.addClass('hidden').text('');
-                }
+                if (el.length) el.addClass('hidden').text('');
             }
 
             function setFieldError(fieldId, message) {
                 const el = $(`#${fieldId}-error`);
-                if (el.length) {
-                    el.removeClass('hidden').text(message);
-                }
+                if (el.length) el.removeClass('hidden').text(message);
             }
 
             function clearAllFieldErrors() {
-                ['name', 'categories', 'cost_price', 'sell_price', 'stock_quantity'].forEach(clearFieldError);
+                ['name', 'categories', 'cost_price', 'sell_price', 'stock_quantity', 'image'].forEach(clearFieldError);
             }
 
             function showInlineValidationError(message) {
                 clearAllFieldErrors();
-
                 const text = String(message || '').toLowerCase();
                 if (text.includes('name')) return setFieldError('name', message);
                 if (text.includes('category')) return setFieldError('categories', message);
                 if (text.includes('cost_price')) return setFieldError('cost_price', message);
                 if (text.includes('sell_price')) return setFieldError('sell_price', message);
                 if (text.includes('stock_quantity')) return setFieldError('stock_quantity', message);
-
+                if (text.includes('image')) return setFieldError('image', message);
                 showMessage(message, 'error');
             }
 
@@ -256,9 +374,9 @@
                 return { Authorization: `Bearer ${token}` };
             }
 
-            function productImage(product) {
-                if (product.img_path) {
-                    return `http://localhost:4000/${product.img_path}`;
+            function firstProductImage(product) {
+                if (Array.isArray(product.images) && product.images.length) {
+                    return `http://localhost:4000/${product.images[0]}`;
                 }
                 return 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
             }
@@ -273,9 +391,61 @@
                 return [];
             }
 
-            function renderProducts() {
+            /* ============================================================
+               ROW BUILDER
+               ============================================================ */
+            function buildRow(product) {
+                const categories = getProductCategories(product).map(c => c.name).join(', ') || '—';
+                const statusBadge = product.deleted_at
+                    ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
+                    : (product.is_active
+                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
+                        : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+
+                const actions = `
+                    <div class="flex items-center justify-end gap-2 flex-wrap">
+                        ${product.deleted_at ? `
+                            <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${product.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
+                        ` : `
+                            <button class="edit-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}"><i class="fa-solid fa-pen"></i>Edit</button>
+                            <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}" data-active="${product.is_active ? '1' : '0'}">
+                                <i class="fa-solid ${product.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
+                                ${product.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${product.id}"><i class="fa-solid fa-trash"></i>Delete</button>
+                        `}
+                    </div>
+                `;
+
+                return `
+                    <tr class="align-top">
+                        <td class="px-5 py-4">
+                            <div class="flex items-start gap-3">
+                                <img src="${firstProductImage(product)}" alt="${product.name}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 bg-slate-100">
+                                <div>
+                                    <div class="font-semibold text-slate-900">${product.name}</div>
+                                    <div class="text-xs text-slate-500 mt-1">ID #${product.id}</div>
+                                    <div class="text-xs text-slate-500 mt-1">${product.color || ''}${product.storage ? ` • ${product.storage}` : ''}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-slate-600">${categories}</td>
+                        <td class="px-5 py-4 text-sm text-slate-600">₱${Number(product.sell_price).toLocaleString()}</td>
+                        <td class="px-5 py-4 text-sm text-slate-600">${product.stock_quantity}</td>
+                        <td class="px-5 py-4">${statusBadge}</td>
+                        <td class="px-5 py-4">${actions}</td>
+                    </tr>
+                `;
+            }
+
+            /* ============================================================
+               FILTERING (search + status) — resets the scroll position
+               ============================================================ */
+            function applyFilters() {
                 const filter = $('#status-filter').val();
-                let rows = state.products.slice();
+                const search = $('#search-input').val().trim().toLowerCase();
+
+                let rows = state.allProducts.slice();
 
                 if (filter === 'active') {
                     rows = rows.filter(p => p.is_active && !p.deleted_at);
@@ -285,81 +455,128 @@
                     rows = rows.filter(p => p.deleted_at);
                 }
 
-                const tbody = $('#products-tbody');
-                tbody.empty();
+                if (search) {
+                    rows = rows.filter(p =>
+                        (p.name || '').toLowerCase().includes(search) ||
+                        (p.description || '').toLowerCase().includes(search)
+                    );
+                }
+
+                state.filteredProducts = rows;
+                state.renderedCount = 0;
+
+                $('#products-tbody').empty();
+                $('#scroll-end').removeClass('show');
+                $('#products-count-label').text(`${rows.length} product${rows.length !== 1 ? 's' : ''} matched`);
 
                 if (!rows.length) {
                     $('#products-empty').removeClass('hidden');
+                } else {
+                    $('#products-empty').addClass('hidden');
+                    loadNextPage(); // render the first batch immediately
+                }
+            }
+
+            /* ============================================================
+               INFINITE SCROLL — loads the next PAGE_SIZE rows
+               ============================================================ */
+            function loadNextPage() {
+                if (state.isLoading) return;
+                if (state.renderedCount >= state.filteredProducts.length) {
+                    $('#scroll-end').addClass('show');
                     return;
                 }
 
-                $('#products-empty').addClass('hidden');
+                state.isLoading = true;
+                $('#scroll-loader').addClass('show');
 
-                rows.forEach(product => {
-                    const categories = getProductCategories(product).map(c => c.name).join(', ') || '—';
-                    const statusBadge = product.deleted_at
-                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
-                        : (product.is_active
-                            ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
-                            : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+                // Simulate a small network delay so the loading state is visible
+                // (remove the setTimeout wrapper if you later paginate server-side)
+                setTimeout(() => {
+                    const nextBatch = state.filteredProducts.slice(
+                        state.renderedCount,
+                        state.renderedCount + PAGE_SIZE
+                    );
 
-                    const actions = `
-                        <div class="flex items-center justify-end gap-2 flex-wrap">
-                            ${product.deleted_at ? `
-                                <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${product.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
-                            ` : `
-                                <button class="edit-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}"><i class="fa-solid fa-pen"></i>Edit</button>
-                                <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}" data-active="${product.is_active ? '1' : '0'}">
-                                    <i class="fa-solid ${product.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
-                                    ${product.is_active ? 'Deactivate' : 'Activate'}
-                                </button>
-                                <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${product.id}"><i class="fa-solid fa-trash"></i>Delete</button>
-                            `}
+                    const html = nextBatch.map(buildRow).join('');
+                    $('#products-tbody').append(html);
+                    state.renderedCount += nextBatch.length;
+
+                    $('#scroll-loader').removeClass('show');
+                    state.isLoading = false;
+
+                    if (state.renderedCount >= state.filteredProducts.length) {
+                        $('#scroll-end').addClass('show');
+                    }
+                }, 250);
+            }
+
+            // Listen for scroll on the table container; load more when near the bottom
+            $('#table-scroll-container').on('scroll', function () {
+                const el = this;
+                const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 120;
+                if (nearBottom) {
+                    loadNextPage();
+                }
+            });
+
+            /* ============================================================
+               MODAL HELPERS
+               ============================================================ */
+            function openModal() {
+                $('#product-modal').removeClass('hidden').addClass('flex');
+            }
+
+            function closeModal() {
+                $('#product-modal').addClass('hidden').removeClass('flex');
+            }
+
+            function renderImagePreview() {
+                const wrap = $('#image-preview').empty();
+
+                state.existingImages.forEach(path => {
+                    if (state.removedImages.includes(path)) return;
+                    wrap.append(`
+                        <div class="relative w-16 h-16">
+                            <img src="http://localhost:4000/${path}" class="w-16 h-16 rounded-lg object-cover border border-slate-200">
+                            <button type="button" class="remove-existing-image absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center" data-path="${path}">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
-                    `;
-
-                    tbody.append(`
-                        <tr class="align-top">
-                            <td class="px-5 py-4">
-                                <div class="flex items-start gap-3">
-                                    <img src="${productImage(product)}" alt="${product.name}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 bg-slate-100">
-                                    <div>
-                                        <div class="font-semibold text-slate-900">${product.name}</div>
-                                        <div class="text-xs text-slate-500 mt-1">ID #${product.id}</div>
-                                        <div class="text-xs text-slate-500 mt-1">${product.color || ''}${product.storage ? ` • ${product.storage}` : ''}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-5 py-4 text-sm text-slate-600">${categories}</td>
-                            <td class="px-5 py-4 text-sm text-slate-600">₱${Number(product.sell_price).toLocaleString()}</td>
-                            <td class="px-5 py-4 text-sm text-slate-600">${product.stock_quantity}</td>
-                            <td class="px-5 py-4">${statusBadge}</td>
-                            <td class="px-5 py-4">${actions}</td>
-                        </tr>
                     `);
+                });
+
+                const files = $('#image')[0].files;
+                Array.from(files).forEach(file => {
+                    const url = URL.createObjectURL(file);
+                    wrap.append(`<img src="${url}" class="w-16 h-16 rounded-lg object-cover border border-blue-300">`);
                 });
             }
 
             function resetForm() {
                 state.editMode = false;
+                state.existingImages = [];
+                state.removedImages = [];
                 clearAllFieldErrors();
                 $('#form-title').text('Create Product');
                 $('#save-btn').text('Create Product');
-                $('#cancel-edit-btn').addClass('hidden');
                 $('#product-id').val('');
                 $('#product-form')[0].reset();
                 $('#stock_quantity').val('0');
                 $('#is_active').prop('checked', true);
                 $('#image').val('');
+                $('#image-preview').empty();
                 $('#category-checkboxes input[type="checkbox"]').prop('checked', false);
+                $('#product-form').validate().resetForm();
             }
 
             function fillForm(product) {
                 state.editMode = true;
+                state.existingImages = Array.isArray(product.images) ? product.images.slice() : [];
+                state.removedImages = [];
                 clearAllFieldErrors();
                 $('#form-title').text('Edit Product');
                 $('#save-btn').text('Update Product');
-                $('#cancel-edit-btn').removeClass('hidden');
                 $('#product-id').val(product.id);
                 $('#name').val(product.name || '');
                 $('#description').val(product.description || '');
@@ -370,6 +587,7 @@
                 $('#storage').val(product.storage || '');
                 $('#is_active').prop('checked', !!product.is_active);
                 $('#image').val('');
+                renderImagePreview();
 
                 const selectedIds = getProductCategories(product).map(c => String(c.id));
                 $('#category-checkboxes input[type="checkbox"]').each(function () {
@@ -377,6 +595,9 @@
                 });
             }
 
+            /* ============================================================
+               DATA LOADING
+               ============================================================ */
             function loadCategories(selectedProductId = null) {
                 return $.ajax({
                     url: `${API_BASE}/categories`,
@@ -395,7 +616,7 @@
                         `);
                     });
                     if (selectedProductId !== null) {
-                        const product = state.products.find(p => String(p.id) === String(selectedProductId));
+                        const product = state.allProducts.find(p => String(p.id) === String(selectedProductId));
                         if (product) fillForm(product);
                     }
                 });
@@ -407,26 +628,39 @@
                     method: 'GET',
                     headers: authHeaders()
                 }).done(function (res) {
-                    state.products = res.rows || [];
-                    renderProducts();
+                    state.allProducts = res.rows || [];
+                    applyFilters();
                 }).fail(function () {
                     showMessage('Failed to load products.', 'error');
                 });
             }
 
+            /* ============================================================
+               FORM SUBMIT
+               ============================================================ */
             function submitForm(e) {
                 e.preventDefault();
 
-                clearAllFieldErrors();
+                if (!$('#product-form').valid()) {
+                    return;
+                }
+
+                const selectedCategoryIds = $('#category-checkboxes input[type="checkbox"]:checked').map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (!selectedCategoryIds.length) {
+                    setFieldError('categories', 'At least one category is required');
+                    return;
+                }
+
+                clearFieldError('categories');
 
                 const name = $('#name').val().trim();
                 const description = $('#description').val().trim();
                 const costPrice = $('#cost_price').val();
                 const sellPrice = $('#sell_price').val();
                 const stockQuantity = $('#stock_quantity').val();
-                const selectedCategoryIds = $('#category-checkboxes input[type="checkbox"]:checked').map(function () {
-                    return $(this).val();
-                }).get();
 
                 const id = $('#product-id').val();
                 const formData = new FormData();
@@ -447,8 +681,16 @@
                     }
                 }
 
-                const file = $('#image')[0].files[0];
-                if (file) formData.append('image', file);
+                const files = $('#image')[0].files;
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('images', files[i]);
+                }
+
+                if (state.editMode) {
+                    const keptExisting = state.existingImages.filter(p => !state.removedImages.includes(p));
+                    formData.append('existing_images', JSON.stringify(keptExisting));
+                    formData.append('removed_images', JSON.stringify(state.removedImages));
+                }
 
                 const ajaxOptions = {
                     url: id ? `${API_BASE}/products/admin/${id}` : `${API_BASE}/products/admin`,
@@ -462,6 +704,7 @@
                 $.ajax(ajaxOptions).done(function () {
                     showMessage(id ? 'Product updated successfully.' : 'Product created successfully.');
                     resetForm();
+                    closeModal();
                     loadProducts();
                 }).fail(function (xhr) {
                     showServerValidationError(xhr);
@@ -470,8 +713,37 @@
 
             $('#product-form').on('submit', submitForm);
             $('#refresh-btn').on('click', function () { loadProducts(); });
-            $('#status-filter').on('change', renderProducts);
-            $('#cancel-edit-btn').on('click', function () { resetForm(); });
+            $('#status-filter').on('change', applyFilters);
+
+            let searchTimer;
+            $('#search-input').on('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(applyFilters, 250);
+            });
+
+            $('#open-create-btn').on('click', function () {
+                resetForm();
+                openModal();
+            });
+            $('#close-modal-btn').on('click', function () {
+                resetForm();
+                closeModal();
+            });
+            $('#cancel-edit-btn').on('click', function () {
+                resetForm();
+                closeModal();
+            });
+
+            $('#image').on('change', renderImagePreview);
+
+            $(document).on('click', '.remove-existing-image', function () {
+                const path = $(this).data('path');
+                if (!state.removedImages.includes(path)) {
+                    state.removedImages.push(path);
+                }
+                renderImagePreview();
+            });
+
             $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
             $('#auth-btn').on('click', function () {
                 localStorage.removeItem('token');
@@ -479,12 +751,15 @@
                 window.location.href = 'login.html';
             });
 
+            /* ============================================================
+               ROW ACTIONS
+               ============================================================ */
             $(document).on('click', '.edit-btn', function () {
                 const id = $(this).data('id');
-                const product = state.products.find(p => String(p.id) === String(id));
+                const product = state.allProducts.find(p => String(p.id) === String(id));
                 if (!product) return;
                 fillForm(product);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                openModal();
             });
 
             $(document).on('click', '.status-btn', function () {
@@ -545,6 +820,9 @@
                 });
             });
 
+            /* ============================================================
+               INIT
+               ============================================================ */
             $.ajax({
                 url: `${API_BASE}/users/me`,
                 method: 'GET',

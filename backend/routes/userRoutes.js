@@ -10,6 +10,7 @@ router.post('/login', userController.login);
 // Logged-in user
 router.get('/me', isAuthenticatedUser, userController.getMe);
 router.put('/me', isAuthenticatedUser, userController.updateMe);
+router.post('/logout', isAuthenticatedUser, userController.logout);
 
 // Admin only
 router.get('/admin/users', isAuthenticatedUser, authorizeRoles('admin'), userController.listUsers);

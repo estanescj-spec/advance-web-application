@@ -40,6 +40,18 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true
+        },
+        // Store JWT token for validation and revocation
+        token: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            defaultValue: null
+        },
+        // Track when token was issued (for expiration validation)
+        token_issued_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            defaultValue: null
         }
     }, {
         tableName: 'users',

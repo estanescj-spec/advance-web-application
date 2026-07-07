@@ -27,6 +27,75 @@
         .dropdown:hover .dropdown-menu {
             display: block;
         }
+
+        /* Search Autocomplete Dropdown */
+        #search-autocomplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: none;
+        }
+        #search-autocomplete.show {
+            display: block;
+        }
+        .autocomplete-item {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .autocomplete-item:hover {
+            background: #f8fafc;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            background: #f1f5f9;
+            border-radius: 6px;
+            padding: 4px;
+        }
+        .autocomplete-item-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .autocomplete-item-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .autocomplete-item-price {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .autocomplete-empty {
+            padding: 16px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
@@ -61,11 +130,16 @@
                         </div>
                     </div>
 
-                    <div class="relative flex-1">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 text-sm">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </span>
-                        <input type="text" id="search-input" placeholder="Search for products, accessories, and more..." class="w-full bg-gray-50 text-xs font-medium text-gray-800 placeholder-gray-400 pl-10 pr-4 py-2.5 rounded-full border border-gray-100 focus:outline-none focus:border-gray-200 focus:bg-white transition">
+                    <div class="search-wrapper flex-1">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 text-sm">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="search-input" placeholder="Search for products, accessories, and more..." class="w-full bg-gray-50 text-xs font-medium text-gray-800 placeholder-gray-400 pl-10 pr-4 py-2.5 rounded-t-full border border-gray-100 border-b-0 focus:outline-none focus:border-gray-200 focus:bg-white transition">
+                            <div id="search-autocomplete" class="autocomplete-empty">
+                                Start typing to search...
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -250,20 +324,6 @@
             });
 
             /* ============================================================
-               SEARCH
-               ============================================================ */
-            $('#search-input').on('keypress', function (e) {
-                if (e.which === 13) {
-                    const query = $(this).val().trim();
-                    if (query) {
-                        window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
-                    } else {
-                        window.location.href = 'shop.html';
-                    }
-                }
-            });
-
-            /* ============================================================
                CATEGORIES DROPDOWN (loaded from backend)
                ============================================================ */
             function loadCategories() {
@@ -284,8 +344,79 @@
             }
 
             /* ============================================================
-               SEARCH
+               AUTOCOMPLETE SEARCH
                ============================================================ */
+            $('#search-input').on('input', function () {
+                const query = $(this).val().trim();
+                const $autocomplete = $('#search-autocomplete');
+
+                if (query.length === 0) {
+                    $autocomplete.removeClass('show').html('<div class="autocomplete-empty">Start typing to search...</div>');
+                    return;
+                }
+
+                $.ajax({
+                    url: `${API_BASE}/products`,
+                    method: 'GET'
+                }).done(function (res) {
+                    const products = (res.rows || []).filter(p => p.is_active);
+                    const queryLower = query.toLowerCase();
+                    const filtered = products.filter(p =>
+                        (p.name || '').toLowerCase().includes(queryLower) ||
+                        (p.description || '').toLowerCase().includes(queryLower)
+                    ).slice(0, 8);
+
+                    if (filtered.length === 0) {
+                        $autocomplete.addClass('show').html('<div class="autocomplete-empty">No products found</div>');
+                        return;
+                    }
+
+                    let html = '';
+                    filtered.forEach(product => {
+                        const price = parseFloat(product.sell_price).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+                        const imgSrc = product.images && product.images.length > 0
+                            ? `${API_BASE.replace('/api/v1', '')}/${product.images[0]}`
+                            : (product.img_path
+                                ? `${API_BASE.replace('/api/v1', '')}/${product.img_path}`
+                                : 'https://placehold.co/40x40/f1f5f9/94a3b8?text=No');
+
+                        html += `
+                        <div class="autocomplete-item" data-product-id="${product.id}">
+                            <img src="${imgSrc}" alt="${product.name}" onerror="this.src='https://placehold.co/40x40/f1f5f9/94a3b8?text=No'">
+                            <div class="autocomplete-item-text">
+                                <div class="autocomplete-item-name">${product.name}</div>
+                                <div class="autocomplete-item-price">${price}</div>
+                            </div>
+                        </div>`;
+                    });
+
+                    $autocomplete.addClass('show').html(html);
+                }).fail(function () {
+                    $autocomplete.addClass('show').html('<div class="autocomplete-empty">Error loading results</div>');
+                });
+            });
+
+            // Click on autocomplete item
+            $(document).on('click', '.autocomplete-item', function () {
+                const productId = $(this).data('product-id');
+                window.location.href = `shop.html?product=${productId}`;
+            });
+
+            // Escape key to close
+            $(document).on('keydown', function (e) {
+                if (e.which === 27) {
+                    $('#search-autocomplete').removeClass('show');
+                }
+            });
+
+            // Click outside to close
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('.search-wrapper').length) {
+                    $('#search-autocomplete').removeClass('show');
+                }
+            });
+
+            // Enter key to search
             $('#search-input').on('keypress', function (e) {
                 if (e.which === 13) {
                     const query = $(this).val().trim();
