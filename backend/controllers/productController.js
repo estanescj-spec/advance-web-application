@@ -321,8 +321,10 @@ exports.updateProduct = async (req, res) => {
             stock_quantity: stock ? stock.value : product.stock_quantity,
             color: color !== undefined ? color : product.color,
             storage: storage !== undefined ? storage : product.storage,
-            img_path: imagePath,
-            is_active: isActiveProvided ? parseBoolean(req.body.is_active, product.is_active) : product.is_active
+            images,
+            is_active: isActiveProvided
+                ? parseBoolean(req.body.is_active, product.is_active)
+                : product.is_active
         });
 
         // Update category associations if provided

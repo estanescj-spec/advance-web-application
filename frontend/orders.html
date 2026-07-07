@@ -164,7 +164,9 @@
                             const p = line.Product;
                             const price = parseFloat(line.price_at_purchase);
                             total += (price * line.quantity);
-                            const img = p && p.img_path ? `http://localhost:4000/${p.img_path}` : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
+                            const img = (p && p.images?.length)
+                                ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
+                                : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
                             const name = p ? p.name : 'Unknown Product';
                             
                             return `

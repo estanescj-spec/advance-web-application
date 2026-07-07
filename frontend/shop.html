@@ -382,11 +382,9 @@
                 let html = '';
                 filtered.forEach(product => {
                     const price = parseFloat(product.sell_price).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
-                    const imgSrc = product.images && product.images.length > 0
+                    const imgSrc = product.images?.length
                         ? `${API_BASE.replace('/api/v1', '')}/${product.images[0]}`
-                        : (product.img_path
-                            ? `${API_BASE.replace('/api/v1', '')}/${product.img_path}`
-                            : 'https://placehold.co/40x40/f1f5f9/94a3b8?text=No');
+                        : 'https://placehold.co/40x40/f1f5f9/94a3b8?text=No';
 
                     html += `
                     <div class="autocomplete-item" data-product-id="${product.id}">
@@ -527,11 +525,9 @@
 
             rows.forEach(function (p) {
                 const price = parseFloat(p.sell_price).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
-                const imgSrc = p.images && p.images.length > 0
+                const imgSrc = p.images?.length
                     ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
-                    : (p.img_path
-                        ? `${API_BASE.replace('/api/v1', '')}/${p.img_path}`
-                        : 'https://placehold.co/400x300/f1f5f9/94a3b8?text=No+Image');
+                    : 'https://placehold.co/400x300/f1f5f9/94a3b8?text=No+Image';
                 const inStock = p.stock_quantity > 0;
                 const stockLabel = inStock
                     ? `<span class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-check text-[10px] mr-1"></i>${p.stock_quantity} in stock</span>`
