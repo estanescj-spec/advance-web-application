@@ -35,6 +35,14 @@ exports.isAuthenticatedUser = async (req, res, next) => {
         if (!user.is_active) {
             return res.status(403).json({ message: 'This account has been deactivated' });
         }
+        if (user.deleted_at) {
+            return res.status(401).json({ message: 'This account has been deleted' });
+        }
+
+        // Verify token matches the one stored in database (token revocation)
+        if (!user.token || user.token !== token) {
+            return res.status(401).json({ message: 'Token has been revoked or is invalid' });
+        }
 
         req.user = { id: user.id, role: user.role };
         next();

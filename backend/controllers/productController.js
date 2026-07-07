@@ -240,9 +240,9 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ error: categoryCheck.error });
         }
 
-        let imagePath = null;
-        if (req.file) {
-            imagePath = 'images/' + req.file.filename;
+        let images = [];
+        if (req.files && req.files.length) {
+            images = req.files.map(f => 'images/' + f.filename);
         }
 
         const product = await Product.create({
@@ -253,7 +253,7 @@ exports.createProduct = async (req, res) => {
             stock_quantity: stock.value,
             color,
             storage,
-            img_path: imagePath,
+            images,
             is_active: parseBoolean(req.body.is_active, true)
         });
 
@@ -308,9 +308,9 @@ exports.updateProduct = async (req, res) => {
             return res.status(400).json({ error: 'sell_price must be greater than cost_price' });
         }
 
-        let imagePath = product.img_path;
-        if (req.file) {
-            imagePath = 'images/' + req.file.filename;
+        let images = product.images || [];
+        if (req.files && req.files.length) {
+            images = req.files.map(f => 'images/' + f.filename);
         }
 
         await product.update({

@@ -52,14 +52,18 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: true
         },
-        img_path: {
-            type: DataTypes.STRING(255),
+        images: {
+            type: DataTypes.JSON,
             allowNull: true,
+            defaultValue: [],
             validate: {
-                isValidImagePath(value) {
+                isValidImages(value) {
                     if (!value) return;
-                    if (!/\.(jpg|jpeg|png|webp)$/i.test(value)) {
-                        throw new Error('Image path must end in .jpg, .jpeg, .png, or .webp');
+                    if (!Array.isArray(value)) throw new Error('Images must be an array');
+                    for (const path of value) {
+                        if (!/\.(jpg|jpeg|png|webp)$/i.test(path)) {
+                            throw new Error('Each image path must end in .jpg, .jpeg, .png, or .webp');
+                        }
                     }
                 }
             }

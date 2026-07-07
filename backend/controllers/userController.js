@@ -26,7 +26,14 @@ exports.register = async (req, res) => {
         // create an empty profile shell for them
         await CustomerProfile.create({ user_id: user.id });
 
+        // Generate JWT token
         const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+        // Save token to database for validation and revocation
+        await user.update({
+            token,
+            token_issued_at: new Date()
+        });
 
         return res.status(201).json({
             message: 'Registered successfully',
@@ -64,12 +71,23 @@ exports.login = async (req, res) => {
             return res.status(403).json({ message: 'This account has been deactivated. Contact support.' });
         }
 
+        if (user.deleted_at) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
         const isMatch = await user.checkPassword(password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        // Generate JWT token
         const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+        // Save token to database for validation and revocation
+        await user.update({
+            token,
+            token_issued_at: new Date()
+        });
 
         return res.status(200).json({
             message: 'Logged in successfully',
@@ -79,6 +97,26 @@ exports.login = async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: 'Something went wrong during login' });
+    }
+};
+
+/* ============================================================
+   LOGOUT (revoke token)
+   ============================================================ */
+exports.logout = async (req, res) => {
+    try {
+        // Clear token from database to revoke it
+        await User.update(
+            { token: null, token_issued_at: null },
+            { where: { id: req.user.id } }
+        );
+
+        return res.status(200).json({
+            message: 'Logged out successfully'
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Something went wrong during logout' });
     }
 };
 

@@ -12,7 +12,7 @@ const sequelize = db.sequelize;
    ============================================================ */
 exports.createOrder = async (req, res) => {
     const buyerId = req.user.id;
-    const { address_id, payment_method } = req.body;
+    const { address_id, payment_method, cart_item_ids } = req.body;
 
     if (!address_id) {
         return res.status(400).json({ error: 'address_id is required' });
@@ -24,9 +24,15 @@ exports.createOrder = async (req, res) => {
         return res.status(400).json({ error: 'Invalid delivery address' });
     }
 
-    const cartItems = await Cart.findAll({ where: { user_id: buyerId }, include: [{ model: Product }] });
+    // build the where clause: if specific cart item IDs were sent, only fetch those rows
+    const cartWhere = { user_id: buyerId };
+    if (Array.isArray(cart_item_ids) && cart_item_ids.length) {
+        cartWhere.id = cart_item_ids;
+    }
+
+    const cartItems = await Cart.findAll({ where: cartWhere, include: [{ model: Product }] });
     if (cartItems.length === 0) {
-        return res.status(400).json({ error: 'Your cart is empty' });
+        return res.status(400).json({ error: 'No matching items found in your cart' });
     }
 
     const transaction = await sequelize.transaction();
@@ -55,6 +61,7 @@ exports.createOrder = async (req, res) => {
         }, { transaction });
 
         let total = 0;
+        const orderedCartIds = [];
 
         for (const item of cartItems) {
             const product = item.Product;
@@ -72,10 +79,11 @@ exports.createOrder = async (req, res) => {
             );
 
             total += parseFloat(product.sell_price) * item.quantity;
+            orderedCartIds.push(item.id);
         }
 
-        // empty the cart now that it's been converted into an order
-        await Cart.destroy({ where: { user_id: buyerId }, transaction });
+        // only remove the cart rows that were actually ordered — leave the rest untouched
+        await Cart.destroy({ where: { id: orderedCartIds, user_id: buyerId }, transaction });
 
         await transaction.commit();
 

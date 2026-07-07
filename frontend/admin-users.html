@@ -10,6 +10,31 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
+
+        /* Infinite scroll loading indicator */
+        #scroll-loader {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        #scroll-loader.show { display: block; }
+
+        #scroll-end {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        #scroll-end.show { display: block; }
+
+        /* Scrollable table container for infinite scroll to work against */
+        #table-scroll-container {
+            max-height: 640px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-white min-h-screen w-screen overflow-y-auto m-0 p-0">
@@ -64,25 +89,32 @@
             <div id="message-box" class="hidden fixed top-28 right-6 z-50 max-w-md rounded-xl border px-4 py-3 text-sm shadow-lg"></div>
 
             <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4">
+                <div class="p-5 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <h2 class="font-bold text-lg">Users</h2>
-                        <p class="text-sm text-slate-500">All accounts including deleted records.</p>
+                        <p id="users-count-label" class="text-sm text-slate-500">All accounts including deleted records.</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500">Filter</label>
-                        <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                            <option value="all">All</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="deleted">Deleted</option>
-                        </select>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500">Search</label>
+                            <input id="search-input" type="text" placeholder="Name or email..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white w-48">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500">Filter</label>
+                            <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                                <option value="all">All</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="deleted">Deleted</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
+                <!-- Scrollable container: infinite scroll listens for scroll events here -->
+                <div id="table-scroll-container" class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
+                        <thead class="bg-slate-50 sticky top-0 z-10">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <th class="px-5 py-3">User</th>
                                 <th class="px-5 py-3">Role</th>
@@ -93,9 +125,20 @@
                         </thead>
                         <tbody id="users-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
                     </table>
-                </div>
-                <div id="users-empty" class="hidden p-8 text-center text-slate-500">
-                    No users found.
+
+                    <div id="users-empty" class="hidden p-8 text-center text-slate-500">
+                        No users found.
+                    </div>
+
+                    <!-- Infinite scroll loading spinner -->
+                    <div id="scroll-loader">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading more users...
+                    </div>
+
+                    <!-- Shown once all users have been loaded -->
+                    <div id="scroll-end">
+                        — End of list —
+                    </div>
                 </div>
             </section>
         </main>
@@ -128,8 +171,16 @@
                 return;
             }
 
+            /* ============================================================
+               STATE
+               ============================================================ */
+            const PAGE_SIZE = 15; // how many rows to render per "page" of scroll
+
             const state = {
-                users: [],
+                allUsers: [],       // full dataset fetched once from the API
+                filteredUsers: [],  // after search + status filter applied
+                renderedCount: 0,   // how many of filteredUsers are currently in the DOM
+                isLoading: false,   // guards against duplicate loads while scrolling
                 deleteId: null,
                 currentUserId: null
             };
@@ -149,9 +200,70 @@
                 window.setTimeout(() => box.addClass('hidden').text(''), 3500);
             }
 
-            function renderUsers() {
+            /* ============================================================
+               ROW BUILDER
+               ============================================================ */
+            function buildRow(user) {
+                const statusBadge = user.deleted_at
+                    ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
+                    : (user.is_active
+                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
+                        : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+
+                const canEditRole = !user.deleted_at && String(user.id) !== String(state.currentUserId);
+                const roleControls = canEditRole ? `
+                    <div class="flex items-center gap-2 mt-2">
+                        <select class="role-select border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" data-id="${user.id}">
+                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>user</option>
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+                        </select>
+                    </div>
+                ` : `
+                    <div class="mt-2 text-xs text-slate-400">${user.deleted_at ? 'Restore to edit role' : 'Your account'}</div>
+                `;
+
+                const actions = `
+                    <div class="flex items-center justify-end gap-2 flex-wrap">
+                        ${user.deleted_at ? `
+                            <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${user.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
+                        ` : `
+                            ${user.role === 'admin' ? '<span class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-slate-400 bg-slate-50 text-sm">Protected admin</span>' : `
+                                <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${user.id}" data-active="${user.is_active ? '1' : '0'}">
+                                    <i class="fa-solid ${user.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
+                                    ${user.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${user.id}"><i class="fa-solid fa-trash"></i>Delete</button>
+                            `}
+                        `}
+                    </div>
+                `;
+
+                return `
+                    <tr class="align-top">
+                        <td class="px-5 py-4">
+                            <div class="font-semibold text-slate-900">${user.name}</div>
+                            <div class="text-xs text-slate-500 mt-1">${user.email}</div>
+                            <div class="text-xs text-slate-500 mt-1">ID #${user.id}</div>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-slate-600 capitalize">
+                            <div>${user.role}</div>
+                            ${roleControls}
+                        </td>
+                        <td class="px-5 py-4">${statusBadge}</td>
+                        <td class="px-5 py-4 text-sm text-slate-600">${user.deleted_at ? new Date(user.deleted_at).toLocaleString() : '—'}</td>
+                        <td class="px-5 py-4">${actions}</td>
+                    </tr>
+                `;
+            }
+
+            /* ============================================================
+               FILTERING (search + status) — resets the scroll position
+               ============================================================ */
+            function applyFilters() {
                 const filter = $('#status-filter').val();
-                let rows = state.users.slice();
+                const search = $('#search-input').val().trim().toLowerCase();
+
+                let rows = state.allUsers.slice();
 
                 if (filter === 'active') {
                     rows = rows.filter(u => u.is_active && !u.deleted_at);
@@ -161,85 +273,96 @@
                     rows = rows.filter(u => u.deleted_at);
                 }
 
-                const tbody = $('#users-tbody');
-                tbody.empty();
+                if (search) {
+                    rows = rows.filter(u =>
+                        (u.name || '').toLowerCase().includes(search) ||
+                        (u.email || '').toLowerCase().includes(search)
+                    );
+                }
+
+                state.filteredUsers = rows;
+                state.renderedCount = 0;
+
+                $('#users-tbody').empty();
+                $('#scroll-end').removeClass('show');
+                $('#users-count-label').text(`${rows.length} user${rows.length !== 1 ? 's' : ''} matched`);
 
                 if (!rows.length) {
                     $('#users-empty').removeClass('hidden');
+                } else {
+                    $('#users-empty').addClass('hidden');
+                    loadNextPage(); // render the first batch immediately
+                }
+            }
+
+            /* ============================================================
+               INFINITE SCROLL — loads the next PAGE_SIZE rows
+               ============================================================ */
+            function loadNextPage() {
+                if (state.isLoading) return;
+                if (state.renderedCount >= state.filteredUsers.length) {
+                    $('#scroll-end').addClass('show');
                     return;
                 }
 
-                $('#users-empty').addClass('hidden');
+                state.isLoading = true;
+                $('#scroll-loader').addClass('show');
 
-                rows.forEach(user => {
-                    const statusBadge = user.deleted_at
-                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
-                        : (user.is_active
-                            ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
-                            : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
+                // Simulate a small network delay so the loading state is visible
+                // (remove the setTimeout wrapper if you fetch pages from the server directly)
+                setTimeout(() => {
+                    const nextBatch = state.filteredUsers.slice(
+                        state.renderedCount,
+                        state.renderedCount + PAGE_SIZE
+                    );
 
-                    const canEditRole = !user.deleted_at && String(user.id) !== String(state.currentUserId);
-                    const roleControls = canEditRole ? `
-                        <div class="flex items-center gap-2 mt-2">
-                            <select class="role-select border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" data-id="${user.id}">
-                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>user</option>
-                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
-                            </select>
-                        </div>
-                    ` : `
-                        <div class="mt-2 text-xs text-slate-400">${user.deleted_at ? 'Restore to edit role' : 'Your account'}</div>
-                    `;
+                    const html = nextBatch.map(buildRow).join('');
+                    $('#users-tbody').append(html);
+                    state.renderedCount += nextBatch.length;
 
-                    const actions = `
-                        <div class="flex items-center justify-end gap-2 flex-wrap">
-                            ${user.deleted_at ? `
-                                <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${user.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
-                            ` : `
-                                ${user.role === 'admin' ? '<span class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-slate-400 bg-slate-50 text-sm">Protected admin</span>' : `
-                                    <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${user.id}" data-active="${user.is_active ? '1' : '0'}">
-                                        <i class="fa-solid ${user.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
-                                        ${user.is_active ? 'Deactivate' : 'Activate'}
-                                    </button>
-                                    <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${user.id}"><i class="fa-solid fa-trash"></i>Delete</button>
-                                `}
-                            `}
-                        </div>
-                    `;
+                    $('#scroll-loader').removeClass('show');
+                    state.isLoading = false;
 
-                    tbody.append(`
-                        <tr class="align-top">
-                            <td class="px-5 py-4">
-                                <div class="font-semibold text-slate-900">${user.name}</div>
-                                <div class="text-xs text-slate-500 mt-1">${user.email}</div>
-                                <div class="text-xs text-slate-500 mt-1">ID #${user.id}</div>
-                            </td>
-                            <td class="px-5 py-4 text-sm text-slate-600 capitalize">
-                                <div>${user.role}</div>
-                                ${roleControls}
-                            </td>
-                            <td class="px-5 py-4">${statusBadge}</td>
-                            <td class="px-5 py-4 text-sm text-slate-600">${user.deleted_at ? new Date(user.deleted_at).toLocaleString() : '—'}</td>
-                            <td class="px-5 py-4">${actions}</td>
-                        </tr>
-                    `);
-                });
+                    if (state.renderedCount >= state.filteredUsers.length) {
+                        $('#scroll-end').addClass('show');
+                    }
+                }, 250);
             }
 
+            // Listen for scroll on the table container; load more when near the bottom
+            $('#table-scroll-container').on('scroll', function () {
+                const el = this;
+                const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 120;
+                if (nearBottom) {
+                    loadNextPage();
+                }
+            });
+
+            /* ============================================================
+               DATA LOADING
+               ============================================================ */
             function loadUsers() {
                 return $.ajax({
                     url: `${API_BASE}/users/admin/users?include_deleted=true`,
                     method: 'GET',
                     headers: authHeaders()
                 }).done(function (res) {
-                    state.users = res.users || [];
-                    renderUsers();
+                    state.allUsers = res.users || [];
+                    applyFilters();
                 }).fail(function () {
                     showMessage('Failed to load users.', 'error');
                 });
             }
 
             $('#refresh-btn').on('click', function () { loadUsers(); });
-            $('#status-filter').on('change', renderUsers);
+            $('#status-filter').on('change', applyFilters);
+
+            let searchTimer;
+            $('#search-input').on('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(applyFilters, 250);
+            });
+
             $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
             $('#auth-btn').on('click', function () {
                 localStorage.removeItem('token');
@@ -247,6 +370,9 @@
                 window.location.href = 'login.html';
             });
 
+            /* ============================================================
+               ROW ACTIONS
+               ============================================================ */
             $(document).on('click', '.status-btn', function () {
                 const id = $(this).data('id');
                 const active = $(this).data('active') === 1 || $(this).data('active') === '1';
@@ -324,6 +450,9 @@
                 });
             });
 
+            /* ============================================================
+               INIT
+               ============================================================ */
             $.ajax({
                 url: `${API_BASE}/users/me`,
                 method: 'GET',
