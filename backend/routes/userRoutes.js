@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth');
+const { censoringProfanityFilter } = require('../middlewares/profanityFilter');
 
 // Public
-router.post('/register', userController.register);
+router.post('/register', censoringProfanityFilter('name'), userController.register);
 router.post('/login', userController.login);
 
 // Logged-in user
 router.get('/me', isAuthenticatedUser, userController.getMe);
-router.put('/me', isAuthenticatedUser, userController.updateMe);
+router.put('/me', isAuthenticatedUser, censoringProfanityFilter('name'), userController.updateMe);
 router.post('/logout', isAuthenticatedUser, userController.logout);
 
 // Admin only
