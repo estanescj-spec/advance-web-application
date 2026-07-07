@@ -33,6 +33,10 @@ const FRONTEND_BANNED_WORDS = [
     'bs', 'sux'
 ];
 
+function escapeRegExp(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Check if text contains banned words
  * Returns { hasBanned: boolean, violations: [] }
@@ -200,6 +204,23 @@ function checkMultipleTexts(textsArray) {
 }
 
 /**
+ * Censor banned words in text by replacing them with asterisks.
+ */
+function censorTextForProfanity(text) {
+    if (!text || typeof text !== 'string') {
+        return text;
+    }
+
+    let censoredText = text;
+    FRONTEND_BANNED_WORDS.forEach(term => {
+        const regex = new RegExp(escapeRegExp(term), 'gi');
+        censoredText = censoredText.replace(regex, '*'.repeat(term.length));
+    });
+
+    return censoredText;
+}
+
+/**
  * Get profanity statistics for text
  */
 function getProfanityStats(text) {
@@ -237,6 +258,7 @@ if (typeof module !== 'undefined' && module.exports) {
         setupProfanityFormValidation,
         showProfanityNotification,
         checkMultipleTexts,
+        censorTextForProfanity,
         getProfanityStats,
         FRONTEND_BANNED_WORDS
     };

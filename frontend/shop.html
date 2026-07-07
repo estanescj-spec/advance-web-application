@@ -292,6 +292,7 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/profanityFilter.js"></script>
     <script src="js/config.js"></script>
     <script>
     $(document).ready(function () {
@@ -780,6 +781,10 @@
                         placeholder="Write your review">
                     </textarea>
 
+                    <p class="mt-2 text-xs text-gray-500">
+                        Reviews are checked for inappropriate language before submission.
+                    </p>
+
                     <input 
                     type="file"
                     id="review-image"
@@ -803,6 +808,9 @@
             $('#product-modal')
                 .removeClass('hidden')
                 .addClass('flex');
+
+            setupProfanityRealTimeCheck('#review-comment');
+            $('#review-comment').val('').trigger('input');
 
             loadReviews(product.id);
 
@@ -843,7 +851,7 @@
                         currentReviewId = myReview.id;
 
                         $('#review-rating').val(myReview.rating);
-                        $('#review-comment').val(myReview.comment || '');
+                        $('#review-comment').val(myReview.comment || '').trigger('input');
 
                         selectedRating = myReview.rating;
 
@@ -958,12 +966,23 @@
                 .data('id');
 
 
+            const reviewComment = $('#review-comment').val() || '';
+            const profanityCheck = checkTextForProfanity(reviewComment);
+            const sanitizedComment = censorTextForProfanity(reviewComment);
+
+            if (profanityCheck.hasBanned) {
+                $('#review-comment').val(sanitizedComment);
+                showProfanityWarning($('#review-comment'), profanityCheck.violations);
+                showToast('Inappropriate language was automatically censored.', 'success');
+            } else {
+                removeProfanityWarning($('#review-comment'));
+            }
+
             const formData = new FormData();
 
             formData.append('product_id', productId);
             formData.append('rating', $('#review-rating').val());
-            formData.append('comment', $('#review-comment').val());
-
+            formData.append('comment', sanitizedComment);
 
             const image = $('#review-image')[0].files[0];
 

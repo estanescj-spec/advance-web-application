@@ -6,6 +6,7 @@ const Cart = db.Cart;
 const Address = db.Address;
 const User = db.User;
 const sequelize = db.sequelize;
+const { sendOrderReceiptEmail } = require('../utils/orderReceipt');
 
 /* ============================================================
    CHECKOUT — builds an Order from the buyer's current Cart
@@ -86,6 +87,12 @@ exports.createOrder = async (req, res) => {
         await Cart.destroy({ where: { id: orderedCartIds, user_id: buyerId }, transaction });
 
         await transaction.commit();
+
+        const buyer = await User.findByPk(buyerId, { attributes: ['id', 'name', 'email'] });
+        const populatedOrder = await Order.findByPk(order.id, {
+            include: [{ model: OrderLine, include: [{ model: Product }] }, { model: Address }]
+        });
+        await sendOrderReceiptEmail(populatedOrder, buyer, address, populatedOrder.OrderLines, 'placed');
 
         return res.status(201).json({
             success: true,
@@ -192,6 +199,9 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     // restore stock if admin is cancelling a still-pending order
+    const buyer = await User.findByPk(order.buyer_id, { attributes: ['id', 'name', 'email'] });
+    const address = await Address.findByPk(order.address_id);
+
     if (status === 'cancelled' && order.status === 'pending') {
         const transaction = await sequelize.transaction();
         try {
@@ -215,7 +225,15 @@ exports.updateOrderStatus = async (req, res) => {
         await order.update({ status });
     }
 
-    return res.status(200).json({ success: true, message: `Order status updated to ${status}`, order });
+    const updatedOrder = await Order.findByPk(id, {
+        include: [{ model: OrderLine, include: [{ model: Product }] }, { model: Address }]
+    });
+
+    if (updatedOrder && buyer?.email) {
+        await sendOrderReceiptEmail(updatedOrder, buyer, address, updatedOrder.OrderLines, status);
+    }
+
+    return res.status(200).json({ success: true, message: `Order status updated to ${status}`, order: updatedOrder });
 };
 
 /* ============================================================
@@ -253,6 +271,16 @@ exports.cancelOrder = async (req, res) => {
 
         await order.update({ status: 'cancelled' }, { transaction });
         await transaction.commit();
+
+        const buyer = await User.findByPk(buyerId, { attributes: ['id', 'name', 'email'] });
+        const address = await Address.findByPk(order.address_id);
+        const updatedOrder = await Order.findByPk(id, {
+            include: [{ model: OrderLine, include: [{ model: Product }] }, { model: Address }]
+        });
+
+        if (updatedOrder && buyer?.email) {
+            await sendOrderReceiptEmail(updatedOrder, buyer, address, updatedOrder.OrderLines, 'cancelled');
+        }
 
         return res.status(200).json({ success: true, message: 'Order cancelled and stock restored' });
     } catch (error) {
