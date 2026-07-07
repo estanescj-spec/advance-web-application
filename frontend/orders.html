@@ -128,6 +128,7 @@
         $('#cart-btn').on('click', () => window.location.href = 'cart.html');
         $('#brand-logo').on('click', () => window.location.href = 'home.html');
 
+
         function updateCartBadge() {
             $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
             .done(function (res) {
@@ -174,7 +175,16 @@
                                     <img src="${img}" class="w-12 h-12 rounded-lg object-cover bg-slate-100 border border-slate-200">
                                     <div class="flex-1">
                                         <div class="text-sm font-medium text-slate-800">${name}</div>
-                                        <div class="text-xs text-slate-500">Qty: ${line.quantity} &times; ₱${price.toLocaleString()}</div>
+                                        <div class="text-xs text-slate-500">
+                                            Qty: ${line.quantity} &times; ₱${price.toLocaleString()}
+                                        </div>
+                                        ${order.status === 'completed' ? `
+                                        <button 
+                                            class="review-btn mt-2 text-xs bg-[#2a52be] text-white px-3 py-1.5 rounded-lg"
+                                            data-product-id="${p.id}">
+                                            Write Review
+                                        </button>
+                                        ` : ''}
                                     </div>
                                     <div class="text-sm font-semibold text-slate-900">₱${(price * line.quantity).toLocaleString()}</div>
                                 </div>
@@ -213,7 +223,13 @@
 
         /* ── header logic ────────────────────────────────────────── */
         $('#profile-btn').on('click', () => window.location.href = getToken() ? 'profile.html' : 'login.html');
+        $(document).on('click','.review-btn',function(){
 
+            const productId = $(this).data('product-id');
+
+            window.location.href = `shop.html?review=${productId}`;
+
+        });
         updateCartBadge();
         loadOrders();
     });

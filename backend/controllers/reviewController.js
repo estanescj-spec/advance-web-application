@@ -36,6 +36,29 @@ exports.addReview = async (req, res) => {
             imagePath = 'images/' + req.file.filename;
         }
 
+        const existingReview = await Review.findOne({
+            where: {
+                product_id: parseInt(product_id),
+                customer_id: userId
+            }
+        });
+
+        if (existingReview) {
+
+            await existingReview.update({
+                rating: parseInt(rating),
+                comment: comment || null,
+                photo_path: imagePath || existingReview.photo_path
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'Review updated successfully',
+                review: existingReview
+            });
+        }
+
+
         const review = await Review.create({
             product_id: parseInt(product_id),
             customer_id: userId,
@@ -121,14 +144,24 @@ exports.getProductReviews = async (req, res) => {
         const { product_id } = req.params;
 
         const reviews = await Review.findAll({
-            where: { product_id },
-            include: [{ model: User, as: 'Customer', attributes: ['id', 'name'] }],
-            order: [['created_at', 'DESC']]
+            where: { product_id: parseInt(product_id) },
+            include: [{
+                model: User,
+                as: 'Customer',
+                attributes: ['id', 'name']
+            }],
+            order: [['id', 'DESC']]
         });
 
-        return res.status(200).json({ success: true, rows: reviews });
+        return res.status(200).json({
+            success: true,
+            rows: reviews
+        });
+
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Error fetching reviews' });
+        return res.status(500).json({
+            error: 'Error fetching reviews'
+        });
     }
 };
