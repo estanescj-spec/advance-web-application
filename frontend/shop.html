@@ -336,10 +336,14 @@
         $('#brand-logo').on('click', () => window.location.href = 'home.html');
 
         /* ── state ───────────────────────────────────────────────── */
-        let allProducts   = [];
+        let currentPage = 1;
+        const pageSize = 4;
+        let hasMore = true;
+        let loading = false;
         let activeCatId   = '';
         let searchQuery   = '';
         let sortValue     = 'newest';
+        let allProducts = [];
 
         /* ── read URL params ─────────────────────────────────────── */
         const params = new URLSearchParams(window.location.search);
@@ -360,8 +364,10 @@
                 url: `${API_BASE}/products`,
                 method: 'GET'
             }).done(function (res) {
-                const products = (res.rows || []).filter(p => p.is_active);
+                const products = res.rows || [];
+
                 const queryLower = query.toLowerCase();
+
                 const filtered = products.filter(p =>
                     (p.name || '').toLowerCase().includes(queryLower) ||
                     (p.description || '').toLowerCase().includes(queryLower)
@@ -459,19 +465,37 @@
         });
 
         /* ── load products ───────────────────────────────────────── */
-        function loadProducts() {
+        function loadProducts(reset = false) {
+            if (loading || !hasMore) return;
+            loading = true;
+            if (reset) {
+                currentPage = 1;
+                hasMore = true;
+                allProducts = [];
+                $('#product-grid').empty();
+            }
             $('#product-loading').show();
-            $('#product-grid').hide();
-            $('#product-empty').addClass('hidden');
-
-            $.ajax({ url: `${API_BASE}/products`, method: 'GET' })
-            .done(function (res) {
-                allProducts = (res.rows || []).filter(p => p.is_active);
-                renderProducts();
+            $.ajax({
+                url: `${API_BASE}/products?page=${currentPage}&limit=${pageSize}`,
+                method: 'GET'
             })
-            .fail(function () {
+            .done(function(res){
+                const rows = res.rows || [];
+                
+                console.log("Current page:", currentPage);
+                console.log("Returned:", rows.length);
+                allProducts.push(...rows);
+                renderProducts();
+                currentPage++;
+
+                if(rows.length < pageSize){
+                    hasMore = false;
+                    console.log("No more products");
+                }
+            })
+            .always(function(){
+                loading = false;
                 $('#product-loading').hide();
-                showToast('Failed to load products.', 'error');
             });
         }
 
@@ -499,7 +523,8 @@
             if (sortValue === 'name_asc')   rows.sort((a, b) => a.name.localeCompare(b.name));
             if (sortValue === 'newest')     rows.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
 
-            const $grid = $('#product-grid').empty();
+            const $grid = $('#product-grid');
+            $grid.empty();
             $('#product-loading').hide();
             $('#results-count').text(rows.length ? `${rows.length} product${rows.length !== 1 ? 's' : ''} found` : '');
 
@@ -675,6 +700,19 @@
         if (reviewProduct) {
             window.location.href = `product.html?id=${reviewProduct}`;
         }
+        $(window).on('scroll', function () {
+            if (loading || !hasMore) return;
+
+            console.log("scrolling");
+
+            if (
+                $(window).scrollTop() + $(window).height() >=
+                $(document).height() - 300
+            ) {
+                console.log("Loading next page...");
+                loadProducts();
+            }
+        });
     });
     </script>
 </body>

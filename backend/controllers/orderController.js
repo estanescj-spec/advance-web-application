@@ -39,13 +39,17 @@ exports.createOrder = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
-        // validate stock and active status before creating anything
+        // validate that products still exist and have enough stock
         for (const item of cartItems) {
             const product = item.Product;
-            if (!product || !product.is_active) {
+
+            if (!product) {
                 await transaction.rollback();
-                return res.status(400).json({ error: `A product in your cart is no longer available` });
+                return res.status(400).json({
+                    error: 'A product in your cart is no longer available'
+                });
             }
+
             if (product.stock_quantity < item.quantity) {
                 await transaction.rollback();
                 return res.status(400).json({

@@ -7,33 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
 
-        /* Infinite scroll loading indicator */
-        #scroll-loader {
-            display: none;
-            text-align: center;
-            padding: 24px;
-            color: #94a3b8;
-            font-size: 13px;
+        .dataTables_wrapper {
+            padding: 20px;
         }
-        #scroll-loader.show { display: block; }
 
-        #scroll-end {
-            display: none;
-            text-align: center;
-            padding: 24px;
-            color: #cbd5e1;
-            font-size: 13px;
+        .dataTables_filter {
+            margin-bottom: 15px;
         }
-        #scroll-end.show { display: block; }
 
-        /* Scrollable table container for infinite scroll to work against */
-        #table-scroll-container {
-            max-height: 640px;
-            overflow-y: auto;
+        .dataTables_length {
+            margin-bottom: 15px;
+        }
+
+        table.dataTable thead th {
+            font-weight: 600;
         }
     </style>
 </head>
@@ -94,27 +86,10 @@
                         <h2 class="font-bold text-lg">Users</h2>
                         <p id="users-count-label" class="text-sm text-slate-500">All accounts including deleted records.</p>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs text-slate-500">Search</label>
-                            <input id="search-input" type="text" placeholder="Name or email..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white w-48">
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs text-slate-500">Filter</label>
-                            <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                                <option value="all">All</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="deleted">Deleted</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
-
-                <!-- Scrollable container: infinite scroll listens for scroll events here -->
-                <div id="table-scroll-container" class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50 sticky top-0 z-10">
+                <div class="overflow-x-auto">
+                    <table id="users-table" class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <th class="px-5 py-3">User</th>
                                 <th class="px-5 py-3">Role</th>
@@ -123,22 +98,8 @@
                                 <th class="px-5 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="users-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        <tbody id="users-tbody"></tbody>
                     </table>
-
-                    <div id="users-empty" class="hidden p-8 text-center text-slate-500">
-                        No users found.
-                    </div>
-
-                    <!-- Infinite scroll loading spinner -->
-                    <div id="scroll-loader">
-                        <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading more users...
-                    </div>
-
-                    <!-- Shown once all users have been loaded -->
-                    <div id="scroll-end">
-                        — End of list —
-                    </div>
                 </div>
             </section>
         </main>
@@ -162,6 +123,7 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="js/config.js"></script>
     <script>
         $(document).ready(function () {
@@ -174,7 +136,6 @@
             /* ============================================================
                STATE
                ============================================================ */
-            const PAGE_SIZE = 15; // how many rows to render per "page" of scroll
 
             const state = {
                 allUsers: [],       // full dataset fetched once from the API
@@ -240,103 +201,21 @@
 
                 return `
                     <tr class="align-top">
-                        <td class="px-5 py-4">
+                        <td>
                             <div class="font-semibold text-slate-900">${user.name}</div>
                             <div class="text-xs text-slate-500 mt-1">${user.email}</div>
                             <div class="text-xs text-slate-500 mt-1">ID #${user.id}</div>
                         </td>
-                        <td class="px-5 py-4 text-sm text-slate-600 capitalize">
+                        <td>
                             <div>${user.role}</div>
                             ${roleControls}
                         </td>
-                        <td class="px-5 py-4">${statusBadge}</td>
-                        <td class="px-5 py-4 text-sm text-slate-600">${user.deleted_at ? new Date(user.deleted_at).toLocaleString() : '—'}</td>
-                        <td class="px-5 py-4">${actions}</td>
+                        <td>${statusBadge}</td>
+                        <td>${user.deleted_at ? new Date(user.deleted_at).toLocaleString() : '—'}</td>
+                        <td>${actions}</td>
                     </tr>
                 `;
             }
-
-            /* ============================================================
-               FILTERING (search + status) — resets the scroll position
-               ============================================================ */
-            function applyFilters() {
-                const filter = $('#status-filter').val();
-                const search = $('#search-input').val().trim().toLowerCase();
-
-                let rows = state.allUsers.slice();
-
-                if (filter === 'active') {
-                    rows = rows.filter(u => u.is_active && !u.deleted_at);
-                } else if (filter === 'inactive') {
-                    rows = rows.filter(u => !u.is_active && !u.deleted_at);
-                } else if (filter === 'deleted') {
-                    rows = rows.filter(u => u.deleted_at);
-                }
-
-                if (search) {
-                    rows = rows.filter(u =>
-                        (u.name || '').toLowerCase().includes(search) ||
-                        (u.email || '').toLowerCase().includes(search)
-                    );
-                }
-
-                state.filteredUsers = rows;
-                state.renderedCount = 0;
-
-                $('#users-tbody').empty();
-                $('#scroll-end').removeClass('show');
-                $('#users-count-label').text(`${rows.length} user${rows.length !== 1 ? 's' : ''} matched`);
-
-                if (!rows.length) {
-                    $('#users-empty').removeClass('hidden');
-                } else {
-                    $('#users-empty').addClass('hidden');
-                    loadNextPage(); // render the first batch immediately
-                }
-            }
-
-            /* ============================================================
-               INFINITE SCROLL — loads the next PAGE_SIZE rows
-               ============================================================ */
-            function loadNextPage() {
-                if (state.isLoading) return;
-                if (state.renderedCount >= state.filteredUsers.length) {
-                    $('#scroll-end').addClass('show');
-                    return;
-                }
-
-                state.isLoading = true;
-                $('#scroll-loader').addClass('show');
-
-                // Simulate a small network delay so the loading state is visible
-                // (remove the setTimeout wrapper if you fetch pages from the server directly)
-                setTimeout(() => {
-                    const nextBatch = state.filteredUsers.slice(
-                        state.renderedCount,
-                        state.renderedCount + PAGE_SIZE
-                    );
-
-                    const html = nextBatch.map(buildRow).join('');
-                    $('#users-tbody').append(html);
-                    state.renderedCount += nextBatch.length;
-
-                    $('#scroll-loader').removeClass('show');
-                    state.isLoading = false;
-
-                    if (state.renderedCount >= state.filteredUsers.length) {
-                        $('#scroll-end').addClass('show');
-                    }
-                }, 250);
-            }
-
-            // Listen for scroll on the table container; load more when near the bottom
-            $('#table-scroll-container').on('scroll', function () {
-                const el = this;
-                const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 120;
-                if (nearBottom) {
-                    loadNextPage();
-                }
-            });
 
             /* ============================================================
                DATA LOADING
@@ -348,21 +227,40 @@
                     headers: authHeaders()
                 }).done(function (res) {
                     state.allUsers = res.users || [];
-                    applyFilters();
+
+                    if ($.fn.DataTable.isDataTable('#users-table')) {
+                        $('#users-table').DataTable().clear().destroy();
+                    }
+                    $('#users-tbody').empty();
+                    state.allUsers.forEach(user => {
+                        $('#users-tbody').append(buildRow(user));
+                    });
+
+                    $('#users-table').DataTable({
+                        pageLength: 10,
+                        lengthMenu: [5, 10, 25, 50],
+                        ordering: true,
+                        order: [[0, 'asc']],
+                        language: {
+                            search: "",
+                            searchPlaceholder: "Search users..."
+                        },
+                        columnDefs: [
+                            {
+                                orderable: false,
+                                targets: 4
+                            }
+                        ]
+                    });
                 }).fail(function () {
                     showMessage('Failed to load users.', 'error');
                 });
             }
 
             $('#refresh-btn').on('click', function () { loadUsers(); });
-            $('#status-filter').on('change', applyFilters);
 
             let searchTimer;
-            $('#search-input').on('input', function () {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(applyFilters, 250);
-            });
-
+        
             $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
             $('#auth-btn').on('click', function () {
                 localStorage.removeItem('token');

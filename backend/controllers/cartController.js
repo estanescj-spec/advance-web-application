@@ -38,9 +38,9 @@ exports.addToCart = async (req, res) => {
             return res.status(400).json({ error: 'Quantity must be at least 1' });
         }
 
-        const product = await Product.findOne({ where: { id: product_id, is_active: true } });
+        const product = await Product.findByPk(product_id);
         if (!product) {
-            return res.status(404).json({ error: 'Product not found or unavailable' });
+            return res.status(404).json({ error: 'Product not found' });
         }
 
         const [item, created] = await Cart.findOrCreate({

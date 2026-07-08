@@ -7,33 +7,89 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
 
-        /* Infinite scroll loading indicator */
-        #scroll-loader {
-            display: none;
-            text-align: center;
-            padding: 24px;
-            color: #94a3b8;
-            font-size: 13px;
+        /* DataTables custom styling */
+        .dataTables_wrapper .dataTables_length select {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.375rem 2rem 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            background-color: white;
+            outline: none;
         }
-        #scroll-loader.show { display: block; }
-
-        #scroll-end {
-            display: none;
-            text-align: center;
-            padding: 24px;
-            color: #cbd5e1;
-            font-size: 13px;
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            background-color: white;
+            outline: none;
+            margin-left: 0.5rem;
         }
-        #scroll-end.show { display: block; }
-
-        /* Scrollable table container for infinite scroll to work against */
-        #table-scroll-container {
-            max-height: 640px;
-            overflow-y: auto;
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #2a52be;
+            box-shadow: 0 0 0 3px rgba(42, 82, 190, 0.1);
+        }
+        .dataTables_wrapper .dataTables_info {
+            font-size: 0.8rem;
+            color: #64748b;
+            padding-top: 1rem;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            padding-top: 1rem;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.5rem !important;
+            padding: 0.375rem 0.75rem !important;
+            margin: 0 0.125rem !important;
+            font-size: 0.8rem !important;
+            color: #334155 !important;
+            background: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #2a52be !important;
+            border-color: #2a52be !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #1f3d90 !important;
+            border-color: #1f3d90 !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+            opacity: 0.4 !important;
+        }
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        table.dataTable thead th {
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        table.dataTable.no-footer {
+            border-bottom: none !important;
+        }
+        table.dataTable thead .sorting,
+        table.dataTable thead .sorting_asc,
+        table.dataTable thead .sorting_desc {
+            cursor: pointer;
+        }
+        .dataTables_wrapper {
+            padding: 0 1.25rem 1.25rem;
         }
     </style>
 </head>
@@ -103,50 +159,28 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500">Search</label>
-                        <input id="search-input" type="text" placeholder="Name or description..." class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white w-48">
-                    </div>
-                    <div class="flex items-center gap-2">
                         <label class="text-xs text-slate-500">Filter</label>
                         <select id="status-filter" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
                             <option value="all">All</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
                             <option value="deleted">Deleted</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Scrollable container: infinite scroll listens for scroll events here -->
-            <div id="table-scroll-container" class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50 sticky top-0 z-10">
+            <div class="overflow-x-auto">
+                <table id="products-table" class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
                         <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                             <th class="px-5 py-3">Product</th>
                             <th class="px-5 py-3">Categories</th>
                             <th class="px-5 py-3">Price</th>
                             <th class="px-5 py-3">Stock</th>
-                            <th class="px-5 py-3">Status</th>
                             <th class="px-5 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="products-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
                 </table>
-
-                <div id="products-empty" class="hidden p-8 text-center text-slate-500">
-                    No products found.
-                </div>
-
-                <!-- Infinite scroll loading spinner -->
-                <div id="scroll-loader">
-                    <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading more products...
-                </div>
-
-                <!-- Shown once all products have been loaded -->
-                <div id="scroll-end">
-                    — End of list —
-                </div>
             </div>
         </section>
     </main>
@@ -217,11 +251,6 @@
                     <p id="image-error" class="hidden mt-1 text-xs text-red-600"></p>
                     <div id="image-preview" class="flex flex-wrap gap-2 mt-3"></div>
                 </div>
-
-                <div class="flex items-center gap-2">
-                    <input id="is_active" name="is_active" type="checkbox" checked class="rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]">
-                    <label for="is_active" class="text-sm text-slate-600">Active</label>
-                </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" id="cancel-edit-btn" class="flex-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3.5 transition">
                         Cancel
@@ -246,6 +275,7 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="js/config.js"></script>
     <script>
@@ -259,14 +289,9 @@
             /* ============================================================
                STATE
                ============================================================ */
-            const PAGE_SIZE = 12; // how many product rows to render per scroll "page"
-
             const state = {
                 allProducts: [],      // full dataset fetched once from the API
                 categories: [],
-                filteredProducts: [], // after search + status filter applied
-                renderedCount: 0,     // how many of filteredProducts are currently in the DOM
-                isLoading: false,     // guards against duplicate loads while scrolling
                 deleteId: null,
                 editMode: false,
                 existingImages: [],   // image paths already saved on the product being edited
@@ -280,7 +305,7 @@
                     description: { maxlength: 5000 },
                     cost_price: { required: true, number: true, min: 0.01 },
                     sell_price: { required: true, number: true, min: 0.01 },
-                    stock_quantity: { number: true, min: 0 },
+                    stock_quantity: { required: true, number: true, min: 0 },
                     color: { maxlength: 50 },
                     storage: { maxlength: 50 }
                 },
@@ -396,22 +421,13 @@
                ============================================================ */
             function buildRow(product) {
                 const categories = getProductCategories(product).map(c => c.name).join(', ') || '—';
-                const statusBadge = product.deleted_at
-                    ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Deleted</span>'
-                    : (product.is_active
-                        ? '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Active</span>'
-                        : '<span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Inactive</span>');
-
+                
                 const actions = `
                     <div class="flex items-center justify-end gap-2 flex-wrap">
                         ${product.deleted_at ? `
                             <button class="restore-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm hover:bg-emerald-100" data-id="${product.id}"><i class="fa-solid fa-rotate-left"></i>Restore</button>
                         ` : `
                             <button class="edit-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}"><i class="fa-solid fa-pen"></i>Edit</button>
-                            <button class="status-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm hover:bg-slate-50" data-id="${product.id}" data-active="${product.is_active ? '1' : '0'}">
-                                <i class="fa-solid ${product.is_active ? 'fa-toggle-on text-green-600' : 'fa-toggle-off text-slate-400'}"></i>
-                                ${product.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
                             <button class="delete-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-700 bg-red-50 text-sm hover:bg-red-100" data-id="${product.id}"><i class="fa-solid fa-trash"></i>Delete</button>
                         `}
                     </div>
@@ -432,93 +448,53 @@
                         <td class="px-5 py-4 text-sm text-slate-600">${categories}</td>
                         <td class="px-5 py-4 text-sm text-slate-600">₱${Number(product.sell_price).toLocaleString()}</td>
                         <td class="px-5 py-4 text-sm text-slate-600">${product.stock_quantity}</td>
-                        <td class="px-5 py-4">${statusBadge}</td>
                         <td class="px-5 py-4">${actions}</td>
                     </tr>
                 `;
             }
 
             /* ============================================================
-               FILTERING (search + status) — resets the scroll position
+               DATATABLE RENDERING
                ============================================================ */
-            function applyFilters() {
+            function renderDataTable() {
                 const filter = $('#status-filter').val();
-                const search = $('#search-input').val().trim().toLowerCase();
 
                 let rows = state.allProducts.slice();
 
-                if (filter === 'active') {
-                    rows = rows.filter(p => p.is_active && !p.deleted_at);
-                } else if (filter === 'inactive') {
-                    rows = rows.filter(p => !p.is_active && !p.deleted_at);
-                } else if (filter === 'deleted') {
+                if (filter === 'deleted') {
                     rows = rows.filter(p => p.deleted_at);
                 }
 
-                if (search) {
-                    rows = rows.filter(p =>
-                        (p.name || '').toLowerCase().includes(search) ||
-                        (p.description || '').toLowerCase().includes(search)
-                    );
+                // Destroy existing DataTable if present
+                if ($.fn.DataTable.isDataTable('#products-table')) {
+                    $('#products-table').DataTable().destroy();
                 }
-
-                state.filteredProducts = rows;
-                state.renderedCount = 0;
-
                 $('#products-tbody').empty();
-                $('#scroll-end').removeClass('show');
+
+                // Build rows
+                const html = rows.map(buildRow).join('');
+                $('#products-tbody').append(html);
+
+                // Update count label
                 $('#products-count-label').text(`${rows.length} product${rows.length !== 1 ? 's' : ''} matched`);
 
-                if (!rows.length) {
-                    $('#products-empty').removeClass('hidden');
-                } else {
-                    $('#products-empty').addClass('hidden');
-                    loadNextPage(); // render the first batch immediately
-                }
+                // Initialize DataTable
+                $('#products-table').DataTable({
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50],
+                    ordering: true,
+                    order: [[0, 'asc']],
+                    language: {
+                        search: '',
+                        searchPlaceholder: 'Search products...',
+                        emptyTable: 'No products found.',
+                        zeroRecords: 'No matching products found.'
+                    },
+                    columnDefs: [
+                        { orderable: false, targets: 4 }
+                    ]
+                });
             }
-
-            /* ============================================================
-               INFINITE SCROLL — loads the next PAGE_SIZE rows
-               ============================================================ */
-            function loadNextPage() {
-                if (state.isLoading) return;
-                if (state.renderedCount >= state.filteredProducts.length) {
-                    $('#scroll-end').addClass('show');
-                    return;
-                }
-
-                state.isLoading = true;
-                $('#scroll-loader').addClass('show');
-
-                // Simulate a small network delay so the loading state is visible
-                // (remove the setTimeout wrapper if you later paginate server-side)
-                setTimeout(() => {
-                    const nextBatch = state.filteredProducts.slice(
-                        state.renderedCount,
-                        state.renderedCount + PAGE_SIZE
-                    );
-
-                    const html = nextBatch.map(buildRow).join('');
-                    $('#products-tbody').append(html);
-                    state.renderedCount += nextBatch.length;
-
-                    $('#scroll-loader').removeClass('show');
-                    state.isLoading = false;
-
-                    if (state.renderedCount >= state.filteredProducts.length) {
-                        $('#scroll-end').addClass('show');
-                    }
-                }, 250);
-            }
-
-            // Listen for scroll on the table container; load more when near the bottom
-            $('#table-scroll-container').on('scroll', function () {
-                const el = this;
-                const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 120;
-                if (nearBottom) {
-                    loadNextPage();
-                }
-            });
 
             /* ============================================================
                MODAL HELPERS
@@ -549,6 +525,9 @@
                 const files = $('#image')[0].files;
                 Array.from(files).forEach(file => {
                     const url = URL.createObjectURL(file);
+                    img.onload = function () {
+                        URL.revokeObjectURL(url);
+                    };
                     wrap.append(`<img src="${url}" class="w-16 h-16 rounded-lg object-cover border border-blue-300">`);
                 });
             }
@@ -563,7 +542,6 @@
                 $('#product-id').val('');
                 $('#product-form')[0].reset();
                 $('#stock_quantity').val('0');
-                $('#is_active').prop('checked', true);
                 $('#image').val('');
                 $('#image-preview').empty();
                 $('#category-checkboxes input[type="checkbox"]').prop('checked', false);
@@ -585,7 +563,6 @@
                 $('#stock_quantity').val(product.stock_quantity);
                 $('#color').val(product.color || '');
                 $('#storage').val(product.storage || '');
-                $('#is_active').prop('checked', !!product.is_active);
                 $('#image').val('');
                 renderImagePreview();
 
@@ -629,7 +606,7 @@
                     headers: authHeaders()
                 }).done(function (res) {
                     state.allProducts = res.rows || [];
-                    applyFilters();
+                    renderDataTable();
                 }).fail(function () {
                     showMessage('Failed to load products.', 'error');
                 });
@@ -656,6 +633,18 @@
 
                 clearFieldError('categories');
 
+                // Check total images (existing + newly selected)
+                const totalImages =
+                    state.existingImages.filter(i => !state.removedImages.includes(i)).length +
+                    $('#image')[0].files.length;
+
+                if (totalImages > 5) {
+                    setFieldError('image', 'Maximum of 5 images allowed.');
+                    return;
+                }
+
+                clearFieldError('image');
+
                 const name = $('#name').val().trim();
                 const description = $('#description').val().trim();
                 const costPrice = $('#cost_price').val();
@@ -671,7 +660,6 @@
                 formData.append('stock_quantity', String(stockQuantity));
                 formData.append('color', $('#color').val().trim());
                 formData.append('storage', $('#storage').val().trim());
-                formData.append('is_active', $('#is_active').is(':checked') ? 'true' : 'false');
 
                 if (selectedCategoryIds.length) {
                     if (selectedCategoryIds.length === 1) {
@@ -713,13 +701,7 @@
 
             $('#product-form').on('submit', submitForm);
             $('#refresh-btn').on('click', function () { loadProducts(); });
-            $('#status-filter').on('change', applyFilters);
-
-            let searchTimer;
-            $('#search-input').on('input', function () {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(applyFilters, 250);
-            });
+            $('#status-filter').on('change', renderDataTable);
 
             $('#open-create-btn').on('click', function () {
                 resetForm();
@@ -760,23 +742,6 @@
                 if (!product) return;
                 fillForm(product);
                 openModal();
-            });
-
-            $(document).on('click', '.status-btn', function () {
-                const id = $(this).data('id');
-                const active = $(this).data('active') === 1 || $(this).data('active') === '1';
-                $.ajax({
-                    url: `${API_BASE}/products/admin/${id}/status`,
-                    method: 'PUT',
-                    headers: authHeaders(),
-                    contentType: 'application/json',
-                    data: JSON.stringify({ is_active: !active })
-                }).done(function () {
-                    showMessage(`Product ${!active ? 'activated' : 'deactivated'} successfully.`);
-                    loadProducts();
-                }).fail(function (xhr) {
-                    showMessage(xhr.responseJSON?.error || 'Unable to update product status.', 'error');
-                });
             });
 
             $(document).on('click', '.delete-btn', function () {

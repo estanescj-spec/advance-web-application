@@ -59,7 +59,6 @@ async function seedDatabase() {
                 stock_quantity: 15,
                 color: 'Sky Blue',
                 storage: '256GB SSD',
-                is_active: true,
                 images: [
                     'images/macbook_air_m5_13.png'
                 ]
@@ -73,7 +72,6 @@ async function seedDatabase() {
                 stock_quantity: 12,
                 color: 'Sky Blue',
                 storage: '256GB SSD',
-                is_active: true,
                 images: [
                     'images/macbook_air_m5_15.png'
                 ]
@@ -87,7 +85,6 @@ async function seedDatabase() {
                 stock_quantity: 8,
                 color: 'Space Black',
                 storage: '1TB SSD',
-                is_active: true,
                 images: [
                     'images/macbook_pro_m5_14.png'
                 ]
@@ -101,7 +98,6 @@ async function seedDatabase() {
                 stock_quantity: 5,
                 color: 'Space Black',
                 storage: '1TB SSD',
-                is_active: true,
                 images: [
                     'images/macbook_pro_m5_max_16.jpg'
                 ]
@@ -117,7 +113,6 @@ async function seedDatabase() {
                 stock_quantity: 30,
                 color: 'Sage',
                 storage: '256GB',
-                is_active: true,
                 images: [
                     'images/iphone17.jpg'
                 ]
@@ -131,7 +126,6 @@ async function seedDatabase() {
                 stock_quantity: 20,
                 color: 'Cloud White',
                 storage: '256GB',
-                is_active: true,
                 images: [
                     'images/iphone_air.jpg'
                 ]
@@ -145,7 +139,6 @@ async function seedDatabase() {
                 stock_quantity: 22,
                 color: 'Deep Blue',
                 storage: '256GB',
-                is_active: true,
                 images: [
                     'images/iphone17_pro.jpg'
                 ]
@@ -159,7 +152,6 @@ async function seedDatabase() {
                 stock_quantity: 25,
                 color: 'Black',
                 storage: '256GB',
-                is_active: true,
                 images: [
                     'images/iphone17e.jpg'
                 ]
@@ -175,7 +167,6 @@ async function seedDatabase() {
                 stock_quantity: 20,
                 color: 'Pink',
                 storage: '128GB',
-                is_active: true,
                 images: [
                     'images/ipad_a16.webp'
                 ]
@@ -189,7 +180,6 @@ async function seedDatabase() {
                 stock_quantity: 15,
                 color: 'Starlight',
                 storage: '128GB',
-                is_active: true,
                 images: [
                     'images/ipad_mini_a17_pro.webp'
                 ]
@@ -203,7 +193,6 @@ async function seedDatabase() {
                 stock_quantity: 14,
                 color: 'Blue',
                 storage: '128GB',
-                is_active: true,
                 images: [
                     'images/ipad_air_m4.webp'
                 ]
@@ -217,7 +206,6 @@ async function seedDatabase() {
                 stock_quantity: 8,
                 color: 'Black',
                 storage: '512GB',
-                is_active: true,
                 images: [
                     'images/ipad_pro_m5_13.webp'
                 ]
