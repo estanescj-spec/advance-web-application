@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product - MacSphere</title>
+    <meta name="description" content="View product details, pricing, and customer reviews at MacSphere.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 9999;
+            min-width: 220px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+        }
+        #toast.show { opacity: 1; transform: translateY(0); }
+        #toast.success { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; }
+        #toast.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; }
+
+        .dropdown:hover .dropdown-menu { display: block; }
+
+        .add-to-cart-btn { transition: background 0.18s, transform 0.15s; }
+        .add-to-cart-btn:active { transform: scale(0.96); }
+        .add-to-cart-btn.loading { opacity: 0.65; pointer-events: none; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] min-h-screen w-screen overflow-y-auto m-0 p-0">
+
+    <!-- TOAST -->
+    <div id="toast"><i id="toast-icon"></i><span id="toast-msg"></span></div>
+
+    <div class="w-full min-h-screen flex flex-col">
+
+        <!-- HEADER -->
+        <header class="bg-white/90 backdrop-blur-md py-5 px-10 w-full z-30 border-b border-gray-100/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] sticky top-0">
+            <div class="max-w-[1440px] mx-auto flex items-center justify-between w-full space-x-8">
+
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" id="brand-logo">
+                    <svg class="w-7 h-7 text-black stroke-current fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        <path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/>
+                    </svg>
+                    <div class="text-2xl font-semibold text-[#0f172a] tracking-tight">MACSPHERE</div>
+                </div>
+
+                <div class="flex-1"></div>
+
+                <div class="flex items-center space-x-7 text-gray-700 shrink-0">
+                    <button id="profile-btn" class="hover:text-black transition text-lg" title="Profile">
+                        <i class="fa-regular fa-user"></i>
+                    </button>
+                    <button id="cart-btn" class="flex items-center space-x-1.5 hover:text-black transition text-gray-800 relative" title="Cart">
+                        <i class="fa-solid fa-shopping-bag text-lg"></i>
+                        <span id="cart-count" class="text-sm font-normal">0</span>
+                    </button>
+                    <button id="auth-btn" class="bg-[#2a52be] hover:bg-[#1f3d90] text-white font-medium text-sm px-7 py-2.5 rounded-full shadow-md shadow-blue-600/10 transition-all transform active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>Sign In</span>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- BACK LINK -->
+        <section class="bg-white border-b border-slate-100 px-10 py-5">
+            <div class="max-w-[1440px] mx-auto">
+                <a href="shop.html" class="flex items-center space-x-2 text-slate-600 hover:text-black font-medium text-sm transition-colors w-fit">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Back to Shop</span>
+                </a>
+            </div>
+        </section>
+
+        <main class="flex-1 max-w-[1440px] mx-auto w-full px-10 py-10">
+
+            <!-- LOADING STATE -->
+            <div id="product-loading" class="text-center py-24">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-[#2a52be] opacity-40"></i>
+            </div>
+
+            <!-- NOT FOUND STATE -->
+            <div id="product-not-found" class="hidden text-center py-24">
+                <i class="fa-solid fa-box-open text-5xl text-slate-200 mb-4"></i>
+                <p class="text-slate-400 font-medium">Product not found.</p>
+                <a href="shop.html" class="inline-block mt-4 bg-slate-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-black transition">Back to Shop</a>
+            </div>
+
+            <!-- PRODUCT CONTENT -->
+            <div id="product-content" class="hidden">
+
+                <div class="grid md:grid-cols-2 gap-10">
+                    <div>
+                        <img id="product-image" src="" alt=""
+                            class="w-full h-[450px] object-contain bg-slate-100 rounded-xl">
+                    </div>
+                    <div>
+                        <p id="product-categories" class="text-sm text-blue-600 font-semibold mb-2"></p>
+                        <h2 id="product-name" class="text-3xl font-bold mb-4"></h2>
+                        <div id="product-price" class="text-3xl font-bold text-[#2a52be] mb-5"></div>
+                        <p id="product-description" class="text-gray-600 leading-7 mb-6"></p>
+                        <p id="product-color" class="mb-2 hidden"><b>Color:</b> <span></span></p>
+                        <p id="product-storage" class="mb-4 hidden"><b>Storage:</b> <span></span></p>
+                        <p class="mb-6"><b>Stock:</b> <span id="product-stock"></span></p>
+
+                        <div class="flex gap-3">
+                            <button
+                                id="add-to-cart-btn"
+                                class="add-to-cart-btn bg-[#2a52be] hover:bg-[#1f3d90] text-white px-6 py-3 rounded-xl font-semibold">
+                                Add to Cart
+                            </button>
+                            <button
+                                id="buy-now-btn"
+                                class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-semibold">
+                                Buy Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REVIEWS SECTION -->
+                <div class="grid md:grid-cols-2 gap-8 mt-12">
+
+                    <!-- Write a Review -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 h-fit">
+                        <h3 class="text-xl font-bold text-slate-900 mb-5">Write a Review</h3>
+
+                        <div class="mb-5">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Rating</label>
+                            <div id="star-rating" class="flex gap-2 text-3xl cursor-pointer">
+                                <i class="fa-regular fa-star text-gray-300" data-value="1"></i>
+                                <i class="fa-regular fa-star text-gray-300" data-value="2"></i>
+                                <i class="fa-regular fa-star text-gray-300" data-value="3"></i>
+                                <i class="fa-regular fa-star text-gray-300" data-value="4"></i>
+                                <i class="fa-regular fa-star text-gray-300" data-value="5"></i>
+                            </div>
+                            <input type="hidden" id="review-rating" value="5">
+                        </div>
+
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Your Review</label>
+                        <textarea
+                            id="review-comment"
+                            rows="4"
+                            class="border border-slate-200 rounded-xl p-3 w-full text-sm focus:outline-none focus:border-blue-300 transition"
+                            placeholder="Share your thoughts about this product...">
+                        </textarea>
+
+                        <p class="mt-2 text-xs text-slate-400">
+                            Reviews are checked for inappropriate language before submission.
+                        </p>
+
+                        <label class="block text-sm font-semibold text-slate-700 mt-4 mb-2">Add a Photo (optional)</label>
+                        <input
+                            type="file"
+                            id="review-image"
+                            accept="image/*"
+                            class="border border-slate-200 rounded-xl p-2 w-full text-sm">
+
+                        <img id="review-image-preview" class="w-24 h-24 object-cover rounded-xl mt-3 hidden border border-slate-200">
+
+                        <button id="submit-review"
+                            class="mt-5 w-full bg-[#2a52be] hover:bg-[#1f3d90] text-white font-semibold py-3 rounded-xl transition">
+                            Submit Review
+                        </button>
+                    </div>
+
+                    <!-- Customer Reviews -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-5">Customer Reviews</h3>
+                        <div id="reviews-container" class="space-y-4 max-h-[520px] overflow-y-auto pr-1">
+                            <p class="text-gray-500 text-sm">Loading reviews...</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-white py-6 px-10 w-full border-t border-gray-100 mt-auto">
+            <div class="max-w-[1440px] mx-auto text-center text-gray-400 text-xs">
+                &copy; 2025 MacSphere &mdash; All Rights Reserved
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="js/config.js"></script>
+    <script>
+    $(document).ready(function () {
+
+        /* ── helpers ─────────────────────────────────────────────── */
+        function getToken() { return localStorage.getItem('token'); }
+        function isSignedIn() { return !!getToken(); }
+        function authHeaders() { return { Authorization: `Bearer ${getToken()}` }; }
+
+        let toastTimer;
+        function showToast(msg, type = 'success') {
+            const $t = $('#toast');
+            $t.removeClass('success error show');
+            $('#toast-icon').attr('class', type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark');
+            $('#toast-msg').text(msg);
+            $t.addClass(type).addClass('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => $t.removeClass('show'), 3000);
+        }
+
+        function updateAuthBtn() {
+            const btn = $('#auth-btn');
+            if (isSignedIn()) {
+                btn.html('<i class="fa-solid fa-right-from-bracket"></i> <span>Log Out</span>');
+                btn.removeClass('bg-[#2a52be] hover:bg-[#1f3d90]').addClass('bg-red-600 hover:bg-red-700');
+            } else {
+                btn.html('<i class="fa-solid fa-right-to-bracket"></i> <span>Sign In</span>');
+                btn.removeClass('bg-red-600 hover:bg-red-700').addClass('bg-[#2a52be] hover:bg-[#1f3d90]');
+            }
+        }
+
+        $('#auth-btn').on('click', function () {
+            if (isSignedIn()) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                updateAuthBtn();
+                updateCartCount();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        function updateCartCount() {
+            if (!isSignedIn()) { $('#cart-count').text('0'); return; }
+            $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
+            .done(function (res) {
+                const total = (res.rows || []).reduce((s, i) => s + i.quantity, 0);
+                $('#cart-count').text(total);
+            }).fail(function () { $('#cart-count').text('0'); });
+        }
+
+        $('#cart-btn').on('click', () => window.location.href = 'cart.html');
+        $('#profile-btn').on('click', () => window.location.href = isSignedIn() ? 'profile.html' : 'login.html');
+        $('#brand-logo').on('click', () => window.location.href = 'home.html');
+
+        /* ── product state ───────────────────────────────────────── */
+        let product = null;
+        let selectedRating = 5;
+        let currentReviewId = null;
+
+        const productId = new URLSearchParams(window.location.search).get('id');
+
+        function renderProduct(p) {
+            product = p;
+
+            const image = p.images?.length
+                ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
+                : 'https://placehold.co/600x600';
+            const price = parseFloat(p.sell_price).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+
+            $('#product-image').attr('src', image).attr('alt', p.name);
+            $('#product-categories').text((p.Categories || p.categories || []).map(c => c.name).join(', '));
+            $('#product-name').text(p.name);
+            $('#product-price').text(price);
+            $('#product-description').text(p.description || 'No description available.');
+            $('#product-stock').text(p.stock_quantity);
+
+            if (p.color) {
+                $('#product-color').removeClass('hidden').find('span').text(p.color);
+            }
+            if (p.storage) {
+                $('#product-storage').removeClass('hidden').find('span').text(p.storage);
+            }
+
+            $('#add-to-cart-btn, #buy-now-btn').data('id', p.id);
+
+            $('#product-loading').addClass('hidden');
+            $('#product-not-found').addClass('hidden');
+            $('#product-content').removeClass('hidden');
+
+            document.title = `${p.name} - MacSphere`;
+
+            $('#review-comment').val('').trigger('input');
+            loadReviews(p.id);
+
+            selectedRating = 5;
+            $('#review-rating').val(5);
+            $('#star-rating i')
+                .removeClass('fa-solid text-yellow-400')
+                .addClass('fa-regular text-gray-300');
+            $('#star-rating i[data-value="5"]')
+                .prevAll().addBack()
+                .removeClass('fa-regular text-gray-300')
+                .addClass('fa-solid text-yellow-400');
+        }
+
+        function loadProduct() {
+            if (!productId) {
+                $('#product-loading').addClass('hidden');
+                $('#product-not-found').removeClass('hidden');
+                return;
+            }
+
+            // Preferred: direct single-product endpoint.
+            $.ajax({ url: `${API_BASE}/products/${productId}`, method: 'GET' })
+            .done(function (res) {
+                const p = res.result || res.row || res.product || res;
+                if (!p || !p.id) throw new Error('bad shape');
+                renderProduct(p);
+            })
+            .fail(function () {
+                // Fallback: fetch full list and find the product client-side.
+                $.ajax({ url: `${API_BASE}/products`, method: 'GET' })
+                .done(function (res) {
+                    const p = (res.rows || []).find(item => String(item.id) === String(productId));
+                    if (!p) {
+                        $('#product-loading').addClass('hidden');
+                        $('#product-not-found').removeClass('hidden');
+                        return;
+                    }
+                    renderProduct(p);
+                })
+                .fail(function () {
+                    $('#product-loading').addClass('hidden');
+                    $('#product-not-found').removeClass('hidden');
+                });
+            });
+        }
+
+        /* ── add to cart / buy now ───────────────────────────────── */
+        $(document).on('click', '#add-to-cart-btn', function () {
+            if (!isSignedIn()) {
+                showToast('Please sign in to add items to your cart.', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            const productId = $(this).data('id');
+            const $btn = $(this);
+
+            $btn.addClass('loading').text('Adding...');
+
+            $.ajax({
+                url: `${API_BASE}/cart`,
+                method: 'POST',
+                headers: authHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify({ product_id: productId, quantity: 1 })
+            }).done(function () {
+                showToast('Added to cart!', 'success');
+                updateCartCount();
+                $btn.removeClass('loading').text('Added ✓');
+                setTimeout(() => $btn.text('Add to Cart'), 1800);
+            }).fail(function (xhr) {
+                showToast(xhr.responseJSON?.error || 'Could not add to cart.', 'error');
+                $btn.removeClass('loading').text('Add to Cart');
+            });
+        });
+
+        $(document).on('click', '#buy-now-btn', function () {
+            if (!isSignedIn()) {
+                showToast('Please sign in to continue.', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            const productId = $(this).data('id');
+            const $btn = $(this);
+
+            if ($btn.prop('disabled')) return;
+            $btn.prop('disabled', true).text('Processing...');
+
+            $.ajax({
+                url: `${API_BASE}/cart`,
+                method: 'POST',
+                headers: authHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify({ product_id: productId, quantity: 1 })
+            }).done(function (res) {
+                const cartItemId = res.result?.id || res.row?.id || res.id;
+                if (cartItemId) {
+                    sessionStorage.setItem('checkoutCartIds', JSON.stringify([cartItemId]));
+                } else {
+                    sessionStorage.removeItem('checkoutCartIds');
+                }
+                window.location.href = 'checkout.html';
+            }).fail(function (xhr) {
+                showToast(xhr.responseJSON?.error || 'Could not proceed to checkout.', 'error');
+                $btn.prop('disabled', false).text('Buy Now');
+            });
+        });
+
+        /* ── star rating ─────────────────────────────────────────── */
+        $(document).on('click', '#star-rating i', function () {
+            selectedRating = $(this).data('value');
+            $('#review-rating').val(selectedRating);
+            $('#star-rating i').each(function () {
+                const value = $(this).data('value');
+                if (value <= selectedRating) {
+                    $(this).removeClass('fa-regular text-gray-300').addClass('fa-solid text-yellow-400');
+                } else {
+                    $(this).removeClass('fa-solid text-yellow-400').addClass('fa-regular text-gray-300');
+                }
+            });
+        });
+
+        /* ── reviews ──────────────────────────────────────────────── */
+        function loadReviews(productId) {
+            $.ajax({ url: `${API_BASE}/reviews/product/${productId}`, method: 'GET' })
+            .done(function (res) {
+                const reviews = res.rows || [];
+                const user = JSON.parse(localStorage.getItem('user'));
+                currentReviewId = null;
+
+                if (user) {
+                    const myReview = reviews.find(r => r.customer_id == user.id);
+                    if (myReview) {
+                        currentReviewId = myReview.id;
+                        $('#review-rating').val(myReview.rating);
+                        $('#review-comment').val(myReview.comment || '').trigger('input');
+                        selectedRating = myReview.rating;
+
+                        $('#star-rating i').each(function () {
+                            const value = $(this).data('value');
+                            if (value <= myReview.rating) {
+                                $(this).removeClass('fa-regular text-gray-300').addClass('fa-solid text-yellow-400');
+                            } else {
+                                $(this).removeClass('fa-solid text-yellow-400').addClass('fa-regular text-gray-300');
+                            }
+                        });
+
+                        if (myReview.photo_path) {
+                            $('#review-image-preview')
+                                .attr('src', `${API_BASE.replace('/api/v1', '')}/${myReview.photo_path}`)
+                                .removeClass('hidden');
+                        }
+                    }
+                }
+
+                if (reviews.length === 0) {
+                    $('#reviews-container').html('<p class="text-gray-500">No reviews yet.</p>');
+                    return;
+                }
+
+                let html = '';
+                reviews.forEach(r => {
+                    let stars = '';
+                    for (let i = 1; i <= 5; i++) {
+                        stars += i <= r.rating
+                            ? '<i class="fa-solid fa-star text-yellow-400"></i>'
+                            : '<i class="fa-regular fa-star text-gray-300"></i>';
+                    }
+
+                    html += `
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-[#2a52be] text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                                    ${(r.Customer?.name || 'A').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm text-slate-800">${r.Customer?.name || 'Anonymous'}</div>
+                                    <div class="text-xs">${stars}</div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-400 shrink-0">${new Date(r.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <p class="mt-3 text-sm text-gray-700 leading-relaxed">${r.comment || ''}</p>
+                        ${r.photo_path
+                            ? `<img src="${API_BASE.replace('/api/v1', '')}/${r.photo_path}" class="w-24 h-24 object-cover rounded-lg mt-3 border border-slate-200">`
+                            : ''}
+                    </div>`;
+                });
+
+                $('#reviews-container').html(html);
+            })
+            .fail(function () {
+                $('#reviews-container').html('<p class="text-red-500">Failed to load reviews.</p>');
+            });
+        }
+
+        $(document).on('click', '#submit-review', function () {
+            if (!isSignedIn()) {
+                showToast('Please sign in first.', 'error');
+                return;
+            }
+            if (!product) return;
+
+            const reviewComment = $('#review-comment').val() || '';
+
+            const formData = new FormData();
+            formData.append('product_id', product.id);
+            formData.append('rating', $('#review-rating').val());
+            formData.append('comment', reviewComment);
+
+            const image = $('#review-image')[0].files[0];
+            if (image) formData.append('photo', image);
+
+            $.ajax({
+                url: currentReviewId ? `${API_BASE}/reviews/${currentReviewId}` : `${API_BASE}/reviews`,
+                method: currentReviewId ? 'PUT' : 'POST',
+                headers: authHeaders(),
+                processData: false,
+                contentType: false,
+                data: formData
+            }).done(function () {
+                showToast('Review added!', 'success');
+                loadReviews(product.id);
+            }).fail(function (xhr) {
+                showToast(xhr.responseJSON?.error || 'Failed', 'error');
+            });
+        });
+
+        /* ── init ────────────────────────────────────────────────── */
+        updateAuthBtn();
+        updateCartCount();
+        loadProduct();
+    });
+    </script>
+</body>
+</html>

@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Orders - MacSphere</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.3/css/responsive.dataTables.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); }
@@ -84,7 +86,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
+                    <table id="orders-table" class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <th class="px-5 py-4">Order ID & Date</th>
@@ -152,9 +154,12 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/3.0.3/js/dataTables.responsive.min.js"></script>
     <script src="js/config.js"></script>
     <script>
         $(document).ready(function () {
+            let ordersTable = null;
             let state = {
                 orders: []
             };
@@ -177,30 +182,49 @@
             }
 
             function renderOrders() {
-                const $tbody = $('#orders-tbody').empty();
+                if (ordersTable) {
+                    ordersTable.destroy();
+                    ordersTable = null;
+                }
+
+                const $tbody = $('#orders-tbody');
+                $tbody.empty();
                 $('#loading-spinner').hide();
 
-                const filter = $('#status-filter').val();
                 let rows = state.orders;
-                if (filter !== 'all') {
-                    rows = rows.filter(o => o.status === filter);
+
+                const filter = $('#status-filter').val();
+
+                if (filter !== "all") {
+                    rows = rows.filter(order => order.status === filter);
                 }
 
                 if (!rows.length) {
                     $('#empty-state').removeClass('hidden');
                     return;
                 }
-
                 $('#empty-state').addClass('hidden');
 
                 rows.forEach(o => {
                     let badgeClass = 'bg-slate-100 text-slate-700';
                     let dotClass = 'bg-slate-400';
-                    if(o.status === 'completed') { badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100'; dotClass = 'bg-emerald-500'; }
-                    if(o.status === 'pending') { badgeClass = 'bg-blue-50 text-[#2a52be] border border-blue-100'; dotClass = 'bg-blue-500'; }
-                    if(o.status === 'cancelled') { badgeClass = 'bg-red-50 text-red-700 border border-red-100'; dotClass = 'bg-red-500'; }
-
-                    const statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md ${badgeClass} text-[11px] font-bold uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full ${dotClass}"></span> ${o.status}</span>`;
+                    if (o.status === 'completed') {
+                        badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                        dotClass = 'bg-emerald-500';
+                    }
+                    if (o.status === 'pending') {
+                        badgeClass = 'bg-blue-50 text-[#2a52be] border border-blue-100';
+                        dotClass = 'bg-blue-500';
+                    }
+                    if (o.status === 'cancelled') {
+                        badgeClass = 'bg-red-50 text-red-700 border border-red-100';
+                        dotClass = 'bg-red-500';
+                    }
+                    const statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md ${badgeClass} text-[11px] font-bold uppercase tracking-wider">
+                        <span class="w-1.5 h-1.5 rounded-full ${dotClass}"></span>
+                        ${o.status}
+                    </span>`;
 
                     let total = 0;
                     let itemCount = 0;
@@ -211,47 +235,66 @@
 
                     const buyerName = o.Buyer ? o.Buyer.name : 'Unknown User';
                     const buyerEmail = o.Buyer ? o.Buyer.email : '';
-                    const date = new Date(o.date_placed).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                    
-                    // Buttons for status
+                    const date = new Date(o.date_placed).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
                     let actionButtons = '';
                     if (o.status === 'pending') {
                         actionButtons += `
-                            <button class="update-status-btn bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition" data-id="${o.id}" data-status="completed">
-                                <i class="fa-solid fa-check mr-1"></i> Complete
+                            <button class="update-status-btn bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                data-id="${o.id}" data-status="completed">
+                                Complete
                             </button>
-                            <button class="update-status-btn bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition" data-id="${o.id}" data-status="cancelled">
-                                <i class="fa-solid fa-xmark mr-1"></i> Cancel
+                            <button class="update-status-btn bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                data-id="${o.id}" data-status="cancelled">
+                                Cancel
                             </button>
                         `;
                     }
-
-                    const tr = `
-                        <tr class="hover:bg-slate-50/50 transition-colors group">
-                            <td class="px-5 py-4">
-                                <div class="text-sm font-bold text-slate-900">#${o.id}</div>
-                                <div class="text-xs font-medium text-slate-500 mt-0.5">${date}</div>
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="text-sm font-semibold text-slate-800">${buyerName}</div>
-                                <div class="text-xs text-slate-500 mt-0.5">${buyerEmail}</div>
-                            </td>
-                            <td class="px-5 py-4 text-sm font-medium text-slate-600">
-                                ${itemCount} items
-                            </td>
-                            <td class="px-5 py-4 text-sm font-bold text-slate-900">
-                                ₱${total.toLocaleString()}
-                            </td>
-                            <td class="px-5 py-4 whitespace-nowrap">${statusBadge}</td>
-                            <td class="px-5 py-4 whitespace-nowrap text-right space-x-1">
-                                <button class="view-details-btn text-[#2a52be] hover:bg-blue-50 px-3 py-1.5 rounded-lg text-xs font-semibold border border-transparent hover:border-blue-100 transition" data-id="${o.id}">
-                                    View Details
-                                </button>
-                                ${actionButtons}
-                            </td>
-                        </tr>
-                    `;
-                    $tbody.append(tr);
+                    $tbody.append(`
+                    <tr>
+                        <td>
+                            <div class="font-bold">#${o.id}</div>
+                            <div class="text-xs text-gray-500">${date}</div>
+                        </td>
+                        <td>
+                            <div class="font-semibold">${buyerName}</div>
+                            <div class="text-xs text-gray-500">${buyerEmail}</div>
+                        </td>
+                        <td>${itemCount} items</td>
+                        <td>₱${total.toLocaleString()}</td>
+                        <td>${statusBadge}</td>
+                        <td class="space-x-1">
+                            <button
+                                class="view-details-btn text-blue-600"
+                                data-id="${o.id}">
+                                View
+                            </button>
+                            ${actionButtons}
+                        </td>
+                    </tr>
+                    `);
+                });
+                ordersTable = $('#orders-table').DataTable({
+                    pageLength: 10,
+                    lengthMenu: [
+                        [10,25,50,100,-1],
+                        [10,25,50,100,"All"]
+                    ],
+                    order: [[0,'desc']],
+                    responsive: true,
+                    language:{
+                        search:"Search:",
+                        lengthMenu:"Show _MENU_ orders",
+                        zeroRecords:"No matching orders found",
+                        info:"Showing _START_ to _END_ of _TOTAL_ orders",
+                        paginate:{
+                            previous:"Previous",
+                            next:"Next"
+                        }
+                    }
                 });
             }
 
@@ -303,8 +346,13 @@
                     total += lineTotal;
 
                     const p = line.Product || {};
-                    const img = p.img_path ? `http://localhost:4000/${p.img_path}` : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
-
+                    const img =
+                        p.images && p.images.length > 0
+                            ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
+                            : (p.img_path
+                                ? `${API_BASE.replace('/api/v1', '')}/${p.img_path}`
+                                : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image');
+                                
                     $list.append(`
                         <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-100">
                             <img src="${img}" class="w-12 h-12 rounded-lg object-cover bg-slate-50 border border-slate-100">
@@ -349,7 +397,9 @@
             });
 
             $('#refresh-btn').on('click', function () { loadOrders(); });
-            $('#status-filter').on('change', renderOrders);
+            $('#status-filter').on('change', function () {
+                renderOrders();
+            });
             $('#brand-logo').on('click', function () { window.location.href = 'admin.html'; });
             
             $('#auth-btn').on('click', function () {

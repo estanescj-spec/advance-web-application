@@ -53,19 +53,17 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: true
         },
         images: {
-            type: DataTypes.JSON,
+            type: DataTypes.TEXT('long'),
             allowNull: true,
-            defaultValue: [],
-            validate: {
-                isValidImages(value) {
-                    if (!value) return;
-                    if (!Array.isArray(value)) throw new Error('Images must be an array');
-                    for (const path of value) {
-                        if (!/\.(jpg|jpeg|png|webp)$/i.test(path)) {
-                            throw new Error('Each image path must end in .jpg, .jpeg, .png, or .webp');
-                        }
-                    }
-                }
+            defaultValue: '[]',
+
+            get() {
+                const value = this.getDataValue('images');
+                return value ? JSON.parse(value) : [];
+            },
+
+            set(value) {
+                this.setDataValue('images', JSON.stringify(value || []));
             }
         }
     }, {

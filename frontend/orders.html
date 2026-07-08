@@ -128,6 +128,7 @@
         $('#cart-btn').on('click', () => window.location.href = 'cart.html');
         $('#brand-logo').on('click', () => window.location.href = 'home.html');
 
+
         function updateCartBadge() {
             $.ajax({ url: `${API_BASE}/cart`, method: 'GET', headers: authHeaders() })
             .done(function (res) {
@@ -164,7 +165,9 @@
                             const p = line.Product;
                             const price = parseFloat(line.price_at_purchase);
                             total += (price * line.quantity);
-                            const img = p && p.img_path ? `http://localhost:4000/${p.img_path}` : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
+                            const img = (p && p.images?.length)
+                                ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
+                                : 'https://placehold.co/96x96/e2e8f0/334155?text=No+Image';
                             const name = p ? p.name : 'Unknown Product';
                             
                             return `
@@ -172,7 +175,16 @@
                                     <img src="${img}" class="w-12 h-12 rounded-lg object-cover bg-slate-100 border border-slate-200">
                                     <div class="flex-1">
                                         <div class="text-sm font-medium text-slate-800">${name}</div>
-                                        <div class="text-xs text-slate-500">Qty: ${line.quantity} &times; ₱${price.toLocaleString()}</div>
+                                        <div class="text-xs text-slate-500">
+                                            Qty: ${line.quantity} &times; ₱${price.toLocaleString()}
+                                        </div>
+                                        ${order.status === 'completed' ? `
+                                        <button 
+                                            class="review-btn mt-2 text-xs bg-[#2a52be] text-white px-3 py-1.5 rounded-lg"
+                                            data-product-id="${p.id}">
+                                            Write Review
+                                        </button>
+                                        ` : ''}
                                     </div>
                                     <div class="text-sm font-semibold text-slate-900">₱${(price * line.quantity).toLocaleString()}</div>
                                 </div>
@@ -190,9 +202,18 @@
                                         <div class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Total</div>
                                         <div class="text-sm font-medium text-slate-800">₱${total.toLocaleString()}</div>
                                     </div>
-                                    <div class="text-right ml-auto">
-                                        <div class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Order # ${order.id}</div>
-                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass}">${order.status}</span>
+                                    <div class="text-right ml-auto flex items-end gap-3">
+                                        <div>
+                                            <div class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Order # ${order.id}</div>
+                                            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass}">${order.status}</span>
+                                        </div>
+                                        ${order.status === 'pending' ? `
+                                        <button 
+                                            class="cancel-order-btn text-xs bg-white border border-red-300 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg font-medium transition"
+                                            data-order-id="${order.id}">
+                                            Cancel Order
+                                        </button>
+                                        ` : ''}
                                     </div>
                                 </div>
                                 <div class="px-5 py-2">
@@ -211,7 +232,33 @@
 
         /* ── header logic ────────────────────────────────────────── */
         $('#profile-btn').on('click', () => window.location.href = getToken() ? 'profile.html' : 'login.html');
+        $(document).on('click','.review-btn',function(){
 
+            const productId = $(this).data('product-id');
+
+            window.location.href = `shop.html?review=${productId}`;
+
+        });
+        $(document).on('click', '.cancel-order-btn', function () {
+            const $btn = $(this);
+            if ($btn.prop('disabled')) return; // guard against double-fire
+
+            const orderId = $btn.data('order-id');
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+
+            $btn.prop('disabled', true).text('Cancelling...');
+
+            $.ajax({
+                url: `${API_BASE}/orders/${orderId}/cancel`,
+                method: 'PUT',
+                headers: authHeaders()
+            }).done(function () {
+                loadOrders();
+            }).fail(function (xhr) {
+                alert(xhr.responseJSON?.message || xhr.responseJSON?.error || 'Failed to cancel order.');
+                $btn.prop('disabled', false).text('Cancel Order');
+            });
+        });
         updateCartBadge();
         loadOrders();
     });

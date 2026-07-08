@@ -49,156 +49,168 @@ async function seedDatabase() {
 
             // Create products and attach categories via the join table
             const productsToCreate = [
-                // ===================== MacBook (4) — M5 lineup =====================
-                {
-                    name: 'MacBook Air 13-inch (M5)',
-                    description: 'The world\'s most popular laptop, now with the M5 chip for even faster everyday performance.',
-                    categories: [macCat.id],
-                    cost_price: 55000.00,
-                    sell_price: 61990.00,
-                    stock_quantity: 15,
-                    color: 'Sky Blue',
-                    storage: '256GB SSD',
-                    is_active: true,
-                    img_path: 'images/macbook_air_m5_13.png'
-                },
-                {
-                    name: 'MacBook Air 15-inch (M5)',
-                    description: 'More screen, same effortless speed. The 15-inch MacBook Air with M5 is built for work and play.',
-                    categories: [macCat.id],
-                    cost_price: 63000.00,
-                    sell_price: 70990.00,
-                    stock_quantity: 12,
-                    color: 'Sky Blue',
-                    storage: '256GB SSD',
-                    is_active: true,
-                    img_path: 'images/macbook_air_m5_15.png'
-                },
-                {
-                    name: 'MacBook Pro 14-inch (M5 Pro)',
-                    description: 'Pro-level power in a compact 14-inch chassis, with the M5 Pro chip for demanding creative workflows.',
-                    categories: [macCat.id],
-                    cost_price: 135000.00,
-                    sell_price: 146990.00,
-                    stock_quantity: 8,
-                    color: 'Space Black',
-                    storage: '1TB SSD',
-                    is_active: true,
-                    img_path: 'images/macbook_pro_m5_14.png'
-                },
-                {
-                    name: 'MacBook Pro 16-inch (M5 Max)',
-                    description: 'The ultimate MacBook Pro, with the M5 Max chip for the most demanding pro workloads.',
-                    categories: [macCat.id],
-                    cost_price: 185000.00,
-                    sell_price: 204990.00,
-                    stock_quantity: 5,
-                    color: 'Space Black',
-                    storage: '1TB SSD',
-                    is_active: true,
-                    img_path: 'images/macbook_pro_m5_max_16.jpg'
-                },
+            // ===================== MacBook (4) =====================
+            {
+                name: 'MacBook Air 13-inch (M5)',
+                description: 'The world\'s most popular laptop, now with the M5 chip for even faster everyday performance.',
+                categories: [macCat.id],
+                cost_price: 55000.00,
+                sell_price: 61990.00,
+                stock_quantity: 15,
+                color: 'Sky Blue',
+                storage: '256GB SSD',
+                images: [
+                    'images/macbook_air_m5_13.png'
+                ]
+            },
+            {
+                name: 'MacBook Air 15-inch (M5)',
+                description: 'More screen, same effortless speed. The 15-inch MacBook Air with M5 is built for work and play.',
+                categories: [macCat.id],
+                cost_price: 63000.00,
+                sell_price: 70990.00,
+                stock_quantity: 12,
+                color: 'Sky Blue',
+                storage: '256GB SSD',
+                images: [
+                    'images/macbook_air_m5_15.png'
+                ]
+            },
+            {
+                name: 'MacBook Pro 14-inch (M5 Pro)',
+                description: 'Pro-level power in a compact 14-inch chassis, with the M5 Pro chip for demanding creative workflows.',
+                categories: [macCat.id],
+                cost_price: 135000.00,
+                sell_price: 146990.00,
+                stock_quantity: 8,
+                color: 'Space Black',
+                storage: '1TB SSD',
+                images: [
+                    'images/macbook_pro_m5_14.png'
+                ]
+            },
+            {
+                name: 'MacBook Pro 16-inch (M5 Max)',
+                description: 'The ultimate MacBook Pro, with the M5 Max chip for the most demanding pro workloads.',
+                categories: [macCat.id],
+                cost_price: 185000.00,
+                sell_price: 204990.00,
+                stock_quantity: 5,
+                color: 'Space Black',
+                storage: '1TB SSD',
+                images: [
+                    'images/macbook_pro_m5_max_16.jpg'
+                ]
+            },
 
-                // ===================== iPhone (4) — iPhone 17 flagships =====================
-                {
-                    name: 'iPhone 17',
-                    description: 'Apple\'s most affordable flagship, with a larger 6.3-inch ProMotion display and the A19 chip.',
-                    categories: [iphoneCat.id],
-                    cost_price: 40000.00,
-                    sell_price: 46990.00,
-                    stock_quantity: 30,
-                    color: 'Sage',
-                    storage: '256GB',
-                    is_active: true,
-                    img_path: 'images/iphone17.jpg'
-                },
-                {
-                    name: 'iPhone Air',
-                    description: 'Apple\'s thinnest and lightest iPhone ever, with a titanium frame and all-day battery life.',
-                    categories: [iphoneCat.id],
-                    cost_price: 50000.00,
-                    sell_price: 57990.00,
-                    stock_quantity: 20,
-                    color: 'Cloud White',
-                    storage: '256GB',
-                    is_active: true,
-                    img_path: 'images/iphone_air.jpg'
-                },
-                {
-                    name: 'iPhone 17 Pro',
-                    description: 'Titanium design, the A19 Pro chip, and an upgraded Fusion camera system with 4K 120fps video.',
-                    categories: [iphoneCat.id],
-                    cost_price: 56000.00,
-                    sell_price: 63990.00,
-                    stock_quantity: 22,
-                    color: 'Deep Blue',
-                    storage: '256GB',
-                    is_active: true,
-                    img_path: 'images/iphone17_pro.jpg'
-                },
-                {
-                    name: 'iPhone 17e',
-                    description: 'The most affordable member of the iPhone 17 family, with the A19 chip and double the starting storage.',
-                    categories: [iphoneCat.id],
-                    cost_price: 30000.00,
-                    sell_price: 34990.00,
-                    stock_quantity: 25,
-                    color: 'Black',
-                    storage: '256GB',
-                    is_active: true,
-                    img_path: 'images/iphone17e.jpg'
-                },
+            // ===================== iPhone (4) =====================
+            {
+                name: 'iPhone 17',
+                description: 'Apple\'s most affordable flagship, with a larger 6.3-inch ProMotion display and the A19 chip.',
+                categories: [iphoneCat.id],
+                cost_price: 40000.00,
+                sell_price: 46990.00,
+                stock_quantity: 30,
+                color: 'Sage',
+                storage: '256GB',
+                images: [
+                    'images/iphone17.jpg'
+                ]
+            },
+            {
+                name: 'iPhone Air',
+                description: 'Apple\'s thinnest and lightest iPhone ever, with a titanium frame and all-day battery life.',
+                categories: [iphoneCat.id],
+                cost_price: 50000.00,
+                sell_price: 57990.00,
+                stock_quantity: 20,
+                color: 'Cloud White',
+                storage: '256GB',
+                images: [
+                    'images/iphone_air.jpg'
+                ]
+            },
+            {
+                name: 'iPhone 17 Pro',
+                description: 'Titanium design, the A19 Pro chip, and an upgraded Fusion camera system with 4K 120fps video.',
+                categories: [iphoneCat.id],
+                cost_price: 56000.00,
+                sell_price: 63990.00,
+                stock_quantity: 22,
+                color: 'Deep Blue',
+                storage: '256GB',
+                images: [
+                    'images/iphone17_pro.jpg'
+                ]
+            },
+            {
+                name: 'iPhone 17e',
+                description: 'The most affordable member of the iPhone 17 family, with the A19 chip and double the starting storage.',
+                categories: [iphoneCat.id],
+                cost_price: 30000.00,
+                sell_price: 34990.00,
+                stock_quantity: 25,
+                color: 'Black',
+                storage: '256GB',
+                images: [
+                    'images/iphone17e.jpg'
+                ]
+            },
 
-                // ===================== iPad (4) — one of each type =====================
-                {
-                    name: 'iPad (A16)',
-                    description: 'The essential iPad experience, now with the A16 chip for smooth everyday performance.',
-                    categories: [ipadCat.id],
-                    cost_price: 24000.00,
-                    sell_price: 27990.00,
-                    stock_quantity: 20,
-                    color: 'Pink',
-                    storage: '128GB',
-                    is_active: true,
-                    img_path: 'images/ipad_a16.webp'
-                },
-                {
-                    name: 'iPad mini (A17 Pro)',
-                    description: 'Powerful, portable, and totally redesigned with the A17 Pro chip and Apple Intelligence support.',
-                    categories: [ipadCat.id],
-                    cost_price: 30000.00,
-                    sell_price: 34990.00,
-                    stock_quantity: 15,
-                    color: 'Starlight',
-                    storage: '128GB',
-                    is_active: true,
-                    img_path: 'images/ipad_mini_a17_pro.webp'
-                },
-                {
-                    name: 'iPad Air (M4)',
-                    description: 'Serious performance in a thin and light design, powered by the M4 chip with faster connectivity.',
-                    categories: [ipadCat.id],
-                    cost_price: 42000.00,
-                    sell_price: 47990.00,
-                    stock_quantity: 14,
-                    color: 'Blue',
-                    storage: '128GB',
-                    is_active: true,
-                    img_path: 'images/ipad_air_m4.webp'
-                },
-                {
-                    name: 'iPad Pro 13-inch (M5)',
-                    description: 'Impossibly thin design with outrageous performance and the breakthrough Ultra Retina XDR display.',
-                    categories: [ipadCat.id],
-                    cost_price: 75000.00,
-                    sell_price: 82990.00,
-                    stock_quantity: 8,
-                    color: 'Black',
-                    storage: '512GB',
-                    is_active: true,
-                    img_path: 'images/ipad_pro_m5_13.webp'
-                }
-            ];
+            // ===================== iPad (4) =====================
+            {
+                name: 'iPad (A16)',
+                description: 'The essential iPad experience, now with the A16 chip for smooth everyday performance.',
+                categories: [ipadCat.id],
+                cost_price: 24000.00,
+                sell_price: 27990.00,
+                stock_quantity: 20,
+                color: 'Pink',
+                storage: '128GB',
+                images: [
+                    'images/ipad_a16.webp'
+                ]
+            },
+            {
+                name: 'iPad mini (A17 Pro)',
+                description: 'Powerful, portable, and totally redesigned with the A17 Pro chip and Apple Intelligence support.',
+                categories: [ipadCat.id],
+                cost_price: 30000.00,
+                sell_price: 34990.00,
+                stock_quantity: 15,
+                color: 'Starlight',
+                storage: '128GB',
+                images: [
+                    'images/ipad_mini_a17_pro.webp'
+                ]
+            },
+            {
+                name: 'iPad Air (M4)',
+                description: 'Serious performance in a thin and light design, powered by the M4 chip with faster connectivity.',
+                categories: [ipadCat.id],
+                cost_price: 42000.00,
+                sell_price: 47990.00,
+                stock_quantity: 14,
+                color: 'Blue',
+                storage: '128GB',
+                images: [
+                    'images/ipad_air_m4.webp'
+                ]
+            },
+            {
+                name: 'iPad Pro 13-inch (M5)',
+                description: 'Impossibly thin design with outrageous performance and the breakthrough Ultra Retina XDR display.',
+                categories: [ipadCat.id],
+                cost_price: 75000.00,
+                sell_price: 82990.00,
+                stock_quantity: 8,
+                color: 'Black',
+                storage: '512GB',
+                images: [
+                    'images/ipad_pro_m5_13.webp'
+                ]
+            }
+        ];
 
             for (const p of productsToCreate) {
                 const { categories, ...prodData } = p;

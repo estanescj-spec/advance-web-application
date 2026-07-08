@@ -1,11 +1,15 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-    // If no SMTP is configured at all, log the email content to the console
-    // so local development doesn't crash. Once SMTP_HOST is set (e.g. Mailtrap),
-    // this always sends a real email through that SMTP server.
-    if (!process.env.SMTP_HOST) {
-        console.log(`[EMAIL - no SMTP configured, logging instead]`);
+    const smtpHost = process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io';
+    const smtpPort = Number(process.env.SMTP_PORT || 2525);
+    const smtpUser = process.env.SMTP_EMAIL || '7228d32baf338c';
+    const smtpPass = process.env.SMTP_PASSWORD || '938517bf73b42c';
+    const fromEmail = process.env.SMTP_FROM_EMAIL || 'macsphere-admin@macsphere.com';
+    const fromName = process.env.SMTP_FROM_NAME || 'MacSphere';
+
+    if (!smtpPass) {
+        console.log('[EMAIL - SMTP password not configured. Set SMTP_PASSWORD in backend/.env]');
         console.log(`To: ${options.email}`);
         console.log(`Subject: ${options.subject}`);
         console.log(`Message: ${options.message}`);
@@ -14,19 +18,23 @@ const sendEmail = async (options) => {
 
     try {
         let transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
             auth: {
-                user: process.env.SMTP_EMAIL,
-                pass: process.env.SMTP_PASSWORD
-            }
+                user: smtpUser,
+                pass: smtpPass
+            },
+            requireTLS: true
         });
 
         const message = {
-            from: `${process.env.SMTP_FROM_NAME || 'MacSphere'} <${process.env.SMTP_FROM_EMAIL || 'noreply@macsphere.com'}>`,
+            from: `${fromName} <${fromEmail}>`,
             to: options.email,
             subject: options.subject,
-            html: `<p>${options.message}</p>`
+            html: options.html || `<p>${options.message}</p>`,
+            text: options.text || options.message,
+            attachments: options.attachments || []
         };
 
         await transporter.sendMail(message);

@@ -34,13 +34,6 @@ function parseStockQuantity(value) {
     return { value: number };
 }
 
-function parseBoolean(value, defaultValue = true) {
-    if (value === undefined || value === null || value === '') return defaultValue;
-    if (value === true || value === 'true' || value === 1 || value === '1') return true;
-    if (value === false || value === 'false' || value === 0 || value === '0') return false;
-    return defaultValue;
-}
-
 function parseCategoryIds(rawCategoryIds, rawCategoryId) {
     if (Array.isArray(rawCategoryIds) && rawCategoryIds.length) {
         return rawCategoryIds.map(id => parseInt(id)).filter(Number.isFinite);
@@ -95,9 +88,11 @@ async function validateCategoryIds(categoryIds) {
    ============================================================ */
 exports.getAllProducts = async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const offset = (page - 1) * limit;
         const { category, min_price, max_price, storage, color, rating, availability, search } = req.query;
-
-        let whereClause = { is_active: true };
+        let whereClause = {};
         let categoryWhere = {};
 
         if (search) {
@@ -135,13 +130,18 @@ exports.getAllProducts = async (req, res) => {
             }
         }
 
-        let products = await Product.findAll({
+        const { count, rows } = await Product.findAndCountAll({
             where: whereClause,
             include: [
                 { model: Category, where: categoryWhere },
                 { model: Review }
-            ]
+            ],
+            limit,
+            offset,
+            distinct: true
         });
+
+        let products = rows;
 
         if (rating) {
             const reqRating = parseFloat(rating);
@@ -152,7 +152,13 @@ exports.getAllProducts = async (req, res) => {
             });
         }
 
-        return res.status(200).json({ success: true, rows: products });
+        return res.status(200).json({
+            success: true,
+            rows: products,
+            total: count,
+            page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: 'Error fetching products', details: error.message });
@@ -165,7 +171,7 @@ exports.getAllProducts = async (req, res) => {
 exports.getSingleProduct = async (req, res) => {
     try {
         const product = await Product.findOne({
-            where: { id: req.params.id, is_active: true },
+            where: { id: req.params.id },
             include: [
                 { model: Category },
                 {
@@ -253,8 +259,7 @@ exports.createProduct = async (req, res) => {
             stock_quantity: stock.value,
             color,
             storage,
-            images,
-            is_active: parseBoolean(req.body.is_active, true)
+            images
         });
 
         // Associate categories (accept single category_id or category_ids array)
@@ -284,7 +289,6 @@ exports.updateProduct = async (req, res) => {
         const costPrice = req.body.cost_price !== undefined ? parseStrictPrice(req.body.cost_price, 'cost_price') : null;
         const sellPrice = req.body.sell_price !== undefined ? parseStrictPrice(req.body.sell_price, 'sell_price') : null;
         const stock = req.body.stock_quantity !== undefined ? parseStockQuantity(req.body.stock_quantity) : null;
-        const isActiveProvided = req.body.is_active !== undefined;
 
         const product = await Product.findByPk(id, { paranoid: false });
         if (!product) {
@@ -321,8 +325,7 @@ exports.updateProduct = async (req, res) => {
             stock_quantity: stock ? stock.value : product.stock_quantity,
             color: color !== undefined ? color : product.color,
             storage: storage !== undefined ? storage : product.storage,
-            img_path: imagePath,
-            is_active: isActiveProvided ? parseBoolean(req.body.is_active, product.is_active) : product.is_active
+            images
         });
 
         // Update category associations if provided
@@ -342,31 +345,6 @@ exports.updateProduct = async (req, res) => {
         }
         console.error(error);
         return res.status(500).json({ error: 'Error updating product', details: error.parent?.sqlMessage || error.message, query: error.sql });
-    }
-};
-
-/* ============================================================
-   ADMIN: ACTIVATE / DEACTIVATE
-   ============================================================ */
-exports.setActiveStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { is_active } = req.body;
-
-        const product = await Product.findByPk(id);
-        if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
-        }
-
-        await product.update({ is_active });
-
-        return res.status(200).json({
-            success: true,
-            message: `Product ${is_active ? 'activated' : 'deactivated'} successfully`
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Error updating product status' });
     }
 };
 

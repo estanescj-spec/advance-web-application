@@ -266,10 +266,13 @@
                 const price = parseFloat(p.sell_price || 0);
                 const qty   = item.quantity;
                 const sub   = price * qty;
-                const imgSrc = p.img_path
-                    ? `${API_BASE.replace('/api/v1', '')}/${p.img_path}`
-                    : 'https://placehold.co/120x90/f1f5f9/94a3b8?text=?';
-
+                const imgSrc =
+                    p.images && p.images.length > 0
+                        ? `${API_BASE.replace('/api/v1', '')}/${p.images[0]}`
+                        : (p.img_path
+                            ? `${API_BASE.replace('/api/v1', '')}/${p.img_path}`
+                            : 'https://placehold.co/120x90/f1f5f9/94a3b8?text=?');
+                            
                 $list.append(`
                 <div class="cart-row flex items-center gap-4 px-6 py-5 border-b border-slate-100 last:border-b-0" id="row-${item.id}">
                     <input type="checkbox" class="item-checkbox w-4 h-4 accent-[#2a52be] cursor-pointer shrink-0" data-cart-id="${item.id}" ${selectedIds.has(item.id) ? 'checked' : ''}>
