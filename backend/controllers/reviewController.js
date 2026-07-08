@@ -3,6 +3,7 @@ const Review = db.Review;
 const Order = db.Order;
 const OrderLine = db.OrderLine;
 const User = db.User;
+const { censorProfanity } = require('../utils/badWordsFilter');
 
 /* ============================================================
    ADD REVIEW (verified purchase only — must have a completed order)
@@ -36,6 +37,9 @@ exports.addReview = async (req, res) => {
             imagePath = 'images/' + req.file.filename;
         }
 
+        // Censor profanity in comment
+        const censoredComment = comment ? censorProfanity(comment) : null;
+
         const existingReview = await Review.findOne({
             where: {
                 product_id: parseInt(product_id),
@@ -47,7 +51,7 @@ exports.addReview = async (req, res) => {
 
             await existingReview.update({
                 rating: parseInt(rating),
-                comment: comment || null,
+                comment: censoredComment,
                 photo_path: imagePath || existingReview.photo_path
             });
 
@@ -64,7 +68,7 @@ exports.addReview = async (req, res) => {
             customer_id: userId,
             order_id: verifiedOrder.id,
             rating: parseInt(rating),
-            comment: comment || null,
+            comment: censoredComment,
             photo_path: imagePath
         });
 
@@ -100,9 +104,12 @@ exports.updateReview = async (req, res) => {
             imagePath = 'images/' + req.file.filename;
         }
 
+        // Censor profanity in comment
+        const censoredComment = comment !== undefined ? censorProfanity(comment) : review.comment;
+
         await review.update({
             rating: rating !== undefined ? parseInt(rating) : review.rating,
-            comment: comment !== undefined ? comment : review.comment,
+            comment: censoredComment,
             photo_path: imagePath
         });
 

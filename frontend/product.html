@@ -207,7 +207,6 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="js/profanityFilter.js"></script>
     <script src="js/config.js"></script>
     <script>
     $(document).ready(function () {
@@ -300,7 +299,6 @@
 
             document.title = `${p.name} - MacSphere`;
 
-            setupProfanityRealTimeCheck('#review-comment');
             $('#review-comment').val('').trigger('input');
             loadReviews(p.id);
 
@@ -508,21 +506,11 @@
             if (!product) return;
 
             const reviewComment = $('#review-comment').val() || '';
-            const profanityCheck = checkTextForProfanity(reviewComment);
-            const sanitizedComment = censorTextForProfanity(reviewComment);
-
-            if (profanityCheck.hasBanned) {
-                $('#review-comment').val(sanitizedComment);
-                showProfanityWarning($('#review-comment'), profanityCheck.violations);
-                showToast('Inappropriate language was automatically censored.', 'success');
-            } else {
-                removeProfanityWarning($('#review-comment'));
-            }
 
             const formData = new FormData();
             formData.append('product_id', product.id);
             formData.append('rating', $('#review-rating').val());
-            formData.append('comment', sanitizedComment);
+            formData.append('comment', reviewComment);
 
             const image = $('#review-image')[0].files[0];
             if (image) formData.append('photo', image);
