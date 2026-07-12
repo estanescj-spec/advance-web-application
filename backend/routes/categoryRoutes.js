@@ -11,7 +11,6 @@ router.get('/:id', categoryController.getSingleCategory);
 router.get('/admin/all', isAuthenticatedUser, authorizeRoles('admin'), categoryController.adminGetAllCategories);
 router.post('/admin', isAuthenticatedUser, authorizeRoles('admin'), categoryController.createCategory);
 router.put('/admin/:id', isAuthenticatedUser, authorizeRoles('admin'), categoryController.updateCategory);
-router.put('/admin/:id/status', isAuthenticatedUser, authorizeRoles('admin'), categoryController.setActiveStatus);
 router.delete('/admin/:id', isAuthenticatedUser, authorizeRoles('admin'), categoryController.deleteCategory);
 
 module.exports = router;

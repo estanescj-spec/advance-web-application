@@ -13,11 +13,6 @@ module.exports = (sequelize, DataTypes) => {
                 notEmpty: { msg: 'Category name cannot be empty' },
                 len: { args: [2, 100], msg: 'Category name must be between 2 and 100 characters' }
             }
-        },
-        is_active: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true
         }
     }, {
         tableName: 'categories',

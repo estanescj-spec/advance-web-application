@@ -212,7 +212,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Categories</label>
                     <div id="category-checkboxes" class="space-y-2 rounded-xl border border-slate-200 px-4 py-3 bg-white max-h-40 overflow-y-auto"></div>
-                    <p class="text-xs text-slate-400 mt-1">Tap or click all categories that apply.</p>
+                    <p class="text-xs text-slate-400 mt-1">Tap or click any categories that apply (optional).</p>
                     <p id="categories-error" class="hidden mt-1 text-xs text-red-600"></p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -525,10 +525,11 @@
                 const files = $('#image')[0].files;
                 Array.from(files).forEach(file => {
                     const url = URL.createObjectURL(file);
-                    img.onload = function () {
-                        URL.revokeObjectURL(url);
-                    };
-                    wrap.append(`<img src="${url}" class="w-16 h-16 rounded-lg object-cover border border-blue-300">`);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'w-16 h-16 rounded-lg object-cover border border-blue-300';
+                    img.onload = () => URL.revokeObjectURL(url);
+                    wrap.append(img);
                 });
             }
 
@@ -626,11 +627,6 @@
                     return $(this).val();
                 }).get();
 
-                if (!selectedCategoryIds.length) {
-                    setFieldError('categories', 'At least one category is required');
-                    return;
-                }
-
                 clearFieldError('categories');
 
                 // Check total images (existing + newly selected)
@@ -660,14 +656,7 @@
                 formData.append('stock_quantity', String(stockQuantity));
                 formData.append('color', $('#color').val().trim());
                 formData.append('storage', $('#storage').val().trim());
-
-                if (selectedCategoryIds.length) {
-                    if (selectedCategoryIds.length === 1) {
-                        formData.append('category_id', selectedCategoryIds[0]);
-                    } else {
-                        formData.append('category_ids', JSON.stringify(selectedCategoryIds));
-                    }
-                }
+                formData.append('category_ids', JSON.stringify(selectedCategoryIds));
 
                 const files = $('#image')[0].files;
                 for (let i = 0; i < files.length; i++) {

@@ -11,15 +11,12 @@ async function seedDatabase() {
 
         async function ensureDefaultAccount({ name, email, password, role }) {
             const existing = await db.User.scope('withPassword').findOne({ where: { email }, paranoid: false });
-
             if (!existing) {
                 return db.User.create({ name, email, password, role });
             }
-
             if (existing.deleted_at) {
                 await existing.restore();
             }
-
             await existing.update({
                 name,
                 role,
@@ -38,7 +35,8 @@ async function seedDatabase() {
             const categories = await db.Category.bulkCreate([
                 { name: 'MacBook' },
                 { name: 'iPhone' },
-                { name: 'iPad' }
+                { name: 'iPad' },
+                { name: 'Apple Watch' }
             ]);
 
             console.log('Seeding default products...');
@@ -46,6 +44,7 @@ async function seedDatabase() {
             const macCat = categories.find(c => c.name === 'MacBook');
             const iphoneCat = categories.find(c => c.name === 'iPhone');
             const ipadCat = categories.find(c => c.name === 'iPad');
+            const watchCat = categories.find(c => c.name === 'Apple Watch');
 
             // Create products and attach categories via the join table
             const productsToCreate = [
@@ -59,9 +58,7 @@ async function seedDatabase() {
                 stock_quantity: 15,
                 color: 'Sky Blue',
                 storage: '256GB SSD',
-                images: [
-                    'images/macbook_air_m5_13.png'
-                ]
+                images: ['images/macbook_air_m5_13.png']
             },
             {
                 name: 'MacBook Air 15-inch (M5)',
@@ -72,9 +69,7 @@ async function seedDatabase() {
                 stock_quantity: 12,
                 color: 'Sky Blue',
                 storage: '256GB SSD',
-                images: [
-                    'images/macbook_air_m5_15.png'
-                ]
+                images: ['images/macbook_air_m5_15.png']
             },
             {
                 name: 'MacBook Pro 14-inch (M5 Pro)',
@@ -85,9 +80,7 @@ async function seedDatabase() {
                 stock_quantity: 8,
                 color: 'Space Black',
                 storage: '1TB SSD',
-                images: [
-                    'images/macbook_pro_m5_14.png'
-                ]
+                images: ['images/macbook_pro_m5_14.png']
             },
             {
                 name: 'MacBook Pro 16-inch (M5 Max)',
@@ -98,9 +91,7 @@ async function seedDatabase() {
                 stock_quantity: 5,
                 color: 'Space Black',
                 storage: '1TB SSD',
-                images: [
-                    'images/macbook_pro_m5_max_16.jpg'
-                ]
+                images: ['images/macbook_pro_m5_max_16.jpg']
             },
 
             // ===================== iPhone (4) =====================
@@ -113,9 +104,7 @@ async function seedDatabase() {
                 stock_quantity: 30,
                 color: 'Sage',
                 storage: '256GB',
-                images: [
-                    'images/iphone17.jpg'
-                ]
+                images: ['images/iphone17.jpg']
             },
             {
                 name: 'iPhone Air',
@@ -126,9 +115,7 @@ async function seedDatabase() {
                 stock_quantity: 20,
                 color: 'Cloud White',
                 storage: '256GB',
-                images: [
-                    'images/iphone_air.jpg'
-                ]
+                images: ['images/iphone_air.jpg']
             },
             {
                 name: 'iPhone 17 Pro',
@@ -139,9 +126,7 @@ async function seedDatabase() {
                 stock_quantity: 22,
                 color: 'Deep Blue',
                 storage: '256GB',
-                images: [
-                    'images/iphone17_pro.jpg'
-                ]
+                images: ['images/iphone17_pro.jpg']
             },
             {
                 name: 'iPhone 17e',
@@ -152,9 +137,7 @@ async function seedDatabase() {
                 stock_quantity: 25,
                 color: 'Black',
                 storage: '256GB',
-                images: [
-                    'images/iphone17e.jpg'
-                ]
+                images: ['images/iphone17e.jpg']
             },
 
             // ===================== iPad (4) =====================
@@ -167,9 +150,7 @@ async function seedDatabase() {
                 stock_quantity: 20,
                 color: 'Pink',
                 storage: '128GB',
-                images: [
-                    'images/ipad_a16.webp'
-                ]
+                images: ['images/ipad_a16.webp']
             },
             {
                 name: 'iPad mini (A17 Pro)',
@@ -180,9 +161,7 @@ async function seedDatabase() {
                 stock_quantity: 15,
                 color: 'Starlight',
                 storage: '128GB',
-                images: [
-                    'images/ipad_mini_a17_pro.webp'
-                ]
+                images: ['images/ipad_mini_a17_pro.webp']
             },
             {
                 name: 'iPad Air (M4)',
@@ -193,9 +172,7 @@ async function seedDatabase() {
                 stock_quantity: 14,
                 color: 'Blue',
                 storage: '128GB',
-                images: [
-                    'images/ipad_air_m4.webp'
-                ]
+                images: ['images/ipad_air_m4.webp']
             },
             {
                 name: 'iPad Pro 13-inch (M5)',
@@ -206,9 +183,58 @@ async function seedDatabase() {
                 stock_quantity: 8,
                 color: 'Black',
                 storage: '512GB',
-                images: [
-                    'images/ipad_pro_m5_13.webp'
-                ]
+                images: ['images/ipad_pro_m5_13.webp']
+            },
+            // ===================== Apple Watch (5) =====================
+            {
+                name: 'Apple Watch Series 11',
+                description: 'The most advanced Apple Watch yet, with all-day battery life and advanced health sensors.',
+                categories: [watchCat.id],
+                cost_price: 18000.00,
+                sell_price: 21990.00,
+                stock_quantity: 25,
+                color: 'Jet Black',
+                images: ['images/apple_watch_series_11.jpg']
+            },
+            {
+                name: 'Apple Watch SE 3',
+                description: 'The essential Apple Watch experience at a more affordable price, now faster and more capable.',
+                categories: [watchCat.id],
+                cost_price: 12000.00,
+                sell_price: 14990.00,
+                stock_quantity: 30,
+                color: 'Starlight',
+                images: ['images/apple_watch_se_3.jpg']
+            },
+            {
+                name: 'Apple Watch Ultra 3',
+                description: 'The most rugged and capable Apple Watch, built for endurance athletes and outdoor adventurers.',
+                categories: [watchCat.id],
+                cost_price: 35000.00,
+                sell_price: 41990.00,
+                stock_quantity: 12,
+                color: 'Natural Titanium',
+                images: ['images/apple_watch_ultra_3.jpg']
+            },
+            {
+                name: 'Apple Watch Hermès Series 11',
+                description: 'Apple Watch Series 11 paired with an exclusive Hermès band and watch face designs.',
+                categories: [watchCat.id],
+                cost_price: 32000.00,
+                sell_price: 37990.00,
+                stock_quantity: 6,
+                color: 'Ébène',
+                images: ['images/apple_watch_hermes_series_11.jpg']
+            },
+            {
+                name: 'Apple Watch Hermès Ultra 3',
+                description: 'The Ultra 3 rugged design meets Hermès craftsmanship in this limited premium collaboration.',
+                categories: [watchCat.id],
+                cost_price: 48000.00,
+                sell_price: 55990.00,
+                stock_quantity: 4,
+                color: 'Natural Titanium',
+                images: ['images/apple_watch_hermes_ultra_3.jpg']
             }
         ];
 

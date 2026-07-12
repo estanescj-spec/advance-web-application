@@ -187,13 +187,13 @@ exports.adminGetAllOrders = async (req, res) => {
 };
 
 /* ============================================================
-   ADMIN: UPDATE ORDER STATUS (pending -> completed | cancelled)
+   ADMIN: UPDATE ORDER STATUS (pending -> shipped -> completed | cancelled)
    ============================================================ */
 exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!['pending', 'completed', 'cancelled'].includes(status)) {
+    if (!['pending', 'shipped', 'completed', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status value' });
     }
 
@@ -202,7 +202,21 @@ exports.updateOrderStatus = async (req, res) => {
         return res.status(404).json({ error: 'Order not found' });
     }
 
-    // restore stock if admin is cancelling a still-pending order
+    // block cancelling once shipped or already completed
+    if (status === 'cancelled' && order.status !== 'pending') {
+        return res.status(400).json({ error: `Cannot cancel order. Current status: ${order.status}` });
+    }
+
+    // block moving a shipped order back to pending
+    if (order.status === 'shipped' && status === 'pending') {
+        return res.status(400).json({ error: 'Cannot move a shipped order back to pending' });
+    }
+
+    // block moving a completed order back to any earlier status
+    if (order.status === 'completed' && status !== 'completed') {
+        return res.status(400).json({ error: 'Cannot change the status of a completed order' });
+    }
+
     const buyer = await User.findByPk(order.buyer_id, { attributes: ['id', 'name', 'email'] });
     const address = await Address.findByPk(order.address_id);
 

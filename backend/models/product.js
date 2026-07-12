@@ -47,11 +47,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(50),
             allowNull: true
         },
-        is_active: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true
-        },
         images: {
             type: DataTypes.TEXT('long'),
             allowNull: true,

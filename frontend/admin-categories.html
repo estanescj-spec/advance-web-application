@@ -83,7 +83,6 @@
                                 <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     <th class="px-5 py-3">ID</th>
                                     <th class="px-5 py-3">Name</th>
-                                    <th class="px-5 py-3">Status</th>
                                     <th class="px-5 py-3 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -112,11 +111,6 @@
                                     <label class="block text-sm font-semibold text-slate-700 mb-1">Name <span class="text-red-500">*</span></label>
                                     <input type="text" id="name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2a52be] transition-colors" placeholder="e.g. MacBooks">
                                     <p class="hidden text-red-500 text-xs mt-1 form-error" id="error-name"></p>
-                                </div>
-
-                                <div class="flex items-center gap-2 pt-2">
-                                    <input type="checkbox" id="is_active" class="rounded border-slate-300 text-[#2a52be] focus:ring-[#2a52be]" checked>
-                                    <label for="is_active" class="text-sm font-medium text-slate-700 cursor-pointer">Active</label>
                                 </div>
 
                                 <div class="pt-5 border-t border-slate-100 flex gap-3">
@@ -190,7 +184,6 @@
             function resetForm() {
                 $('#category-id').val('');
                 $('#name').val('');
-                $('#is_active').prop('checked', true);
                 $('#form-title').text('Create Category');
                 $('#form-title').next().text('Add a new product category.');
                 $('#submit-btn').text('Save Category');
@@ -201,7 +194,6 @@
             function fillForm(category) {
                 $('#category-id').val(category.id);
                 $('#name').val(category.name);
-                $('#is_active').prop('checked', category.is_active);
                 $('#form-title').text('Edit Category');
                 $('#form-title').next().text('Update category details.');
                 $('#submit-btn').text('Update Category');
@@ -228,27 +220,11 @@
                 $('#empty-state').addClass('hidden');
 
                 rows.forEach(c => {
-                    const statusBadge = c.is_active
-                        ? `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold uppercase tracking-wider">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Active
-                        </span>`
-                        : `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wider">
-                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                Inactive
-                        </span>`;
                     $tbody.append(`
                         <tr>
                             <td>#${c.id}</td>
                             <td>${c.name}</td>
-                            <td>${statusBadge}</td>
                             <td class="text-right">
-                                <button
-                                    class="status-btn text-slate-400 hover:text-slate-800 mx-1"
-                                    data-id="${c.id}"
-                                    data-active="${c.is_active ? 1 : 0}">
-                                    <i class="fa-solid ${c.is_active ? 'fa-toggle-on text-emerald-500' : 'fa-toggle-off'} text-lg"></i>
-                                </button>
                                 <button
                                     class="edit-btn text-blue-500 hover:text-blue-700 mx-1"
                                     data-id="${c.id}">
@@ -306,14 +282,13 @@
                 
                 const id = $('#category-id').val();
                 const name = $('#name').val().trim();
-                const is_active = $('#is_active').is(':checked');
 
                 if (!name) {
                     $('#error-name').text('Category name is required').removeClass('hidden');
                     return;
                 }
 
-                const payload = { name, is_active };
+                const payload = { name };
 
                 const ajaxOptions = {
                     url: id ? `${API_BASE}/categories/admin/${id}` : `${API_BASE}/categories/admin`,
@@ -349,23 +324,6 @@
                 if (!category) return;
                 fillForm(category);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-
-            $(document).on('click', '.status-btn', function () {
-                const id = $(this).data('id');
-                const active = $(this).data('active') === 1 || $(this).data('active') === '1';
-                $.ajax({
-                    url: `${API_BASE}/categories/admin/${id}/status`,
-                    method: 'PUT',
-                    headers: authHeaders(),
-                    contentType: 'application/json',
-                    data: JSON.stringify({ is_active: !active })
-                }).done(function () {
-                    showMessage(`Category ${!active ? 'activated' : 'deactivated'} successfully.`);
-                    loadCategories();
-                }).fail(function (xhr) {
-                    showMessage(xhr.responseJSON?.error || 'Unable to update category status.', 'error');
-                });
             });
 
             $(document).on('click', '.delete-btn', function () {
