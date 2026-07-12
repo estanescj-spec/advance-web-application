@@ -80,6 +80,7 @@
                         <select id="status-filter" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white font-medium focus:outline-none focus:border-[#2a52be]">
                             <option value="all">All Orders</option>
                             <option value="pending">Pending</option>
+                            <option value="shipped">Shipped</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
@@ -216,6 +217,10 @@
                         badgeClass = 'bg-blue-50 text-[#2a52be] border border-blue-100';
                         dotClass = 'bg-blue-500';
                     }
+                    if (o.status === 'shipped') {
+                        badgeClass = 'bg-purple-50 text-purple-700 border border-purple-100';
+                        dotClass = 'bg-purple-500';
+                    }
                     if (o.status === 'cancelled') {
                         badgeClass = 'bg-red-50 text-red-700 border border-red-100';
                         dotClass = 'bg-red-500';
@@ -243,13 +248,20 @@
                     let actionButtons = '';
                     if (o.status === 'pending') {
                         actionButtons += `
-                            <button class="update-status-btn bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                                data-id="${o.id}" data-status="completed">
-                                Complete
+                            <button class="update-status-btn bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                data-id="${o.id}" data-status="shipped">
+                                Ship
                             </button>
                             <button class="update-status-btn bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
                                 data-id="${o.id}" data-status="cancelled">
                                 Cancel
+                            </button>
+                        `;
+                    } else if (o.status === 'shipped') {
+                        actionButtons += `
+                            <button class="update-status-btn bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                data-id="${o.id}" data-status="completed">
+                                Complete
                             </button>
                         `;
                     }
@@ -378,8 +390,13 @@
             $(document).on('click', '.update-status-btn', function () {
                 const id = $(this).data('id');
                 const status = $(this).data('status');
-                
-                const actionWord = status === 'completed' ? 'complete' : 'cancel';
+
+                const actionWordMap = {
+                    completed: 'complete',
+                    cancelled: 'cancel',
+                    shipped: 'mark as shipped'
+                };
+                const actionWord = actionWordMap[status] || status;
                 if (!confirm(`Are you sure you want to ${actionWord} this order?`)) return;
 
                 $.ajax({

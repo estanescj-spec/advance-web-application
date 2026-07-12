@@ -58,6 +58,12 @@ const buildOrderReceiptPdf = async (order, buyer, address, orderLines) => {
 
 const getStatusCopy = (statusLabel) => {
     switch (statusLabel) {
+        case 'shipped':
+            return {
+                title: 'Your order has been shipped',
+                headline: 'Your MacSphere order is on its way.',
+                body: 'Your order has been shipped and is heading to your delivery address. Your receipt is attached below.'
+            };
         case 'completed':
             return {
                 title: 'Your order is complete',
@@ -160,18 +166,26 @@ const sendOrderReceiptEmail = async (order, buyer, address, orderLines, status) 
     }
 
     const pdfBuffer = await buildOrderReceiptPdf(order, buyer, address, orderLines);
-    const statusLabel = status === 'completed' ? 'completed' : status === 'cancelled' ? 'cancelled' : 'placed';
-    const subject = statusLabel === 'placed'
-        ? `Your MacSphere order #${order.id} has been placed`
-        : statusLabel === 'completed'
-            ? `Your MacSphere order #${order.id} has been completed`
-            : `Your MacSphere order #${order.id} has been cancelled`;
 
-    const message = statusLabel === 'placed'
-        ? `Hello ${buyer.name || 'Customer'}, your order has been placed successfully. We have attached your receipt.`
-        : statusLabel === 'completed'
-            ? `Hello ${buyer.name || 'Customer'}, your order has been completed. We have attached your receipt.`
-            : `Hello ${buyer.name || 'Customer'}, your order has been cancelled. We have attached the receipt for your records.`;
+    const validLabels = ['shipped', 'completed', 'cancelled'];
+    const statusLabel = validLabels.includes(status) ? status : 'placed';
+
+    const subjectMap = {
+        placed: `Your MacSphere order #${order.id} has been placed`,
+        shipped: `Your MacSphere order #${order.id} has shipped`,
+        completed: `Your MacSphere order #${order.id} has been completed`,
+        cancelled: `Your MacSphere order #${order.id} has been cancelled`
+    };
+
+    const messageMap = {
+        placed: `Hello ${buyer.name || 'Customer'}, your order has been placed successfully. We have attached your receipt.`,
+        shipped: `Hello ${buyer.name || 'Customer'}, your order has shipped and is on its way. We have attached your receipt.`,
+        completed: `Hello ${buyer.name || 'Customer'}, your order has been completed. We have attached your receipt.`,
+        cancelled: `Hello ${buyer.name || 'Customer'}, your order has been cancelled. We have attached the receipt for your records.`
+    };
+
+    const subject = subjectMap[statusLabel];
+    const message = messageMap[statusLabel];
 
     await sendEmail({
         email: buyer.email,
