@@ -70,14 +70,12 @@ db.Address.belongsTo(db.User, { foreignKey: 'user_id' });
 db.Product.belongsToMany(db.Category, {
    through: db.ProductCategory,
    foreignKey: 'product_id',
-   otherKey: 'category_id',
-   onDelete: 'RESTRICT'
+   otherKey: 'category_id'
 });
 db.Category.belongsToMany(db.Product, {
    through: db.ProductCategory,
    foreignKey: 'category_id',
-   otherKey: 'product_id',
-   onDelete: 'RESTRICT'
+   otherKey: 'product_id'
 });
 
 // --- Cart Management ---

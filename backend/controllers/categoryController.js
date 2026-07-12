@@ -8,7 +8,6 @@ const Product = db.Product;
 exports.getCategories = async (req, res) => {
     try {
         const categories = await Category.findAll({
-            where: { is_active: true },
             order: [['name', 'ASC']]
         });
         return res.status(200).json({ success: true, rows: categories });
@@ -24,8 +23,8 @@ exports.getCategories = async (req, res) => {
 exports.getSingleCategory = async (req, res) => {
     try {
         const category = await Category.findOne({
-            where: { id: req.params.id, is_active: true },
-            include: [{ model: Product, where: { is_active: true }, required: false }]
+            where: { id: req.params.id },
+            include: [{ model: Product, required: false }]
         });
 
         if (!category) {
@@ -107,31 +106,6 @@ exports.updateCategory = async (req, res) => {
         }
         console.error(error);
         return res.status(500).json({ error: 'Error updating category' });
-    }
-};
-
-/* ============================================================
-   ADMIN: ACTIVATE / DEACTIVATE
-   ============================================================ */
-exports.setActiveStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { is_active } = req.body;
-
-        const category = await Category.findByPk(id);
-        if (!category) {
-            return res.status(404).json({ error: 'Category not found' });
-        }
-
-        await category.update({ is_active });
-
-        return res.status(200).json({
-            success: true,
-            message: `Category ${is_active ? 'activated' : 'deactivated'} successfully`
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Error updating category status' });
     }
 };
 

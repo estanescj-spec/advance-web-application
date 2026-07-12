@@ -374,11 +374,9 @@
                     let html = '';
                     filtered.forEach(product => {
                         const price = parseFloat(product.sell_price).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
-                        const imgSrc = product.images && product.images.length > 0
+                        const imgSrc = product.images?.length
                             ? `${API_BASE.replace('/api/v1', '')}/${product.images[0]}`
-                            : (product.img_path
-                                ? `${API_BASE.replace('/api/v1', '')}/${product.img_path}`
-                                : 'https://placehold.co/40x40/f1f5f9/94a3b8?text=No');
+                            : 'https://placehold.co/40x40/f1f5f9/94a3b8?text=No';
 
                         html += `
                         <div class="autocomplete-item" data-product-id="${product.id}">

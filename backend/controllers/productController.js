@@ -61,7 +61,7 @@ function parseCategoryIds(rawCategoryIds, rawCategoryId) {
 }
 
 async function validateCategoryIds(categoryIds) {
-    if (!Array.isArray(categoryIds) || categoryIds.length === 0) return { error: 'At least one category is required' };
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) return { value: [] };
 
     const uniqueIds = [...new Set(categoryIds)];
     const found = await Category.findAll({ where: { id: uniqueIds } });

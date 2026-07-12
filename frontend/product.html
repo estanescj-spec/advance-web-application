@@ -396,7 +396,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify({ product_id: productId, quantity: 1 })
             }).done(function (res) {
-                const cartItemId = res.result?.id || res.row?.id || res.id;
+                const cartItemId = res.item.id;
                 if (cartItemId) {
                     sessionStorage.setItem('checkoutCartIds', JSON.stringify([cartItemId]));
                 } else {
